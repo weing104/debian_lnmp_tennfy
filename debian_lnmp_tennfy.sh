@@ -196,7 +196,7 @@ installphp
 installnginx
 #set web dir
 cd /var/www
-wget http://tennfyfile.qiniudn.com/phpMyAdmin.zip
+wget --no-check-certificate https://raw.githubusercontent.com/tennfy/debian_lnmp_tennfy/master/phpMyAdmin.zip
 unzip phpMyAdmin.zip
 
 echo "-----------" &&
