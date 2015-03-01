@@ -1,21 +1,71 @@
 #!/bin/bash
+#===============================================================================================
+#   System Required:  Debian or Ubuntu (32bit/64bit)
+#   Description:  Install lnmp for Debian or Ubuntu
+#   Author: tennfy <admin@tennfy.com>
+#   Intro:  http://www.tennfy.com
+#===============================================================================================
+clear
+echo "#############################################################"
+echo "# Install lnmp for Debian or Ubuntu (32bit/64bit)"
+echo "# Intro: http://www.tennfy.com"
+echo "#"
+echo "# Author: tennfy <admin@tennfy.com>"
+echo "#"
+echo "#############################################################"
+echo ""
+function check_sanity {
+	# Do some sanity checking.
+	if [ $(/usr/bin/id -u) != "0" ]
+	then
+		die 'Must be run by root user'
+	fi
 
-function installlnmp(){
+	if [ ! -f /etc/debian_version ]
+	then
+		die "Distribution is not supported"
+	fi
+}
+
+function die {
+	echo "ERROR: $1" > /dev/null 1>&2
+	exit 1
+}
+function remove_unneeded {
+	if [ -f /usr/lib/sm.bin/smtpd ]
+    then
+        invoke-rc.d sendmail stop
+    fi
+	DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge sendmail* apache2* samba* bind9* nscd
+	invoke-rc.d saslauthd stop
+	invoke-rc.d xinetd stop
+	update-rc.d saslauthd disable
+	update-rc.d xinetd disable
+}
+function install_dotdeb {
 	# add dotdeb.
-dv=$(cut -d. -f1 /etc/debian_version)
-if [ "$dv" = "7" ]; then
+	dv=$(cut -d. -f1 /etc/debian_version)
+	if [ "$dv" = "7" ]; then
 	echo -e 'deb http://packages.dotdeb.org wheezy all' >> /etc/apt/sources.list
     echo -e 'deb-src http://packages.dotdeb.org wheezy all' >> /etc/apt/sources.list
-elif [ "$dv" = "6" ]; then
+	elif [ "$dv" = "6" ]; then
     echo -e 'deb http://packages.dotdeb.org squeeze all' >> /etc/apt/sources.list
     echo -e 'deb-src http://packages.dotdeb.org squeeze all' >> /etc/apt/sources.list
-fi
+	fi
 
-#inport GnuPG key
-wget http://www.dotdeb.org/dotdeb.gpg
-cat dotdeb.gpg | apt-key add -
-rm dotdeb.gpg
-apt-get update
+	#import GnuPG key
+	wget http://www.dotdeb.org/dotdeb.gpg
+	cat dotdeb.gpg | apt-key add -
+	rm dotdeb.gpg
+	apt-get update
+}
+function init(){
+    
+	remove_unneeded
+	install_dotdeb
+}
+function installlnmp(){
+	
 mkdir /var/www
 #install zip unzip
 apt-get install -y zip unzip
@@ -159,15 +209,25 @@ function repaire502(){
     echo "-----------"
 }
 
-echo "which do you want to?input the number."
-echo "1. install lnmp"
-echo "2. add virtualhost"
-echo "3. repaire 502error"
-read num
-
-case "$num" in
-[1] ) (installlnmp);;
-[2] ) (addvirtualhost);;
-[3] ) (repaire502);;
-*) echo "nothing,exit";;
+######################### Initialization ################################################
+check_sanity
+action=$1
+[  -z $1 ] && action=install
+case "$action" in
+install)
+    installlnmp
+    ;;
+addvhost)
+    addvirtualhost
+    ;;
+repaire)
+    repaire502
+    ;;
+init)
+    init
+    ;;	
+*)
+    echo "Arguments error! [${action} ]"
+    echo "Usage: `basename $0` {init|install|addvhost|repaire}"
+    ;;
 esac
