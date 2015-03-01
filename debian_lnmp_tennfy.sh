@@ -59,30 +59,66 @@ function install_dotdeb {
 	rm dotdeb.gpg
 	apt-get update
 }
-function init(){
-    
-	remove_unneeded
-	install_dotdeb
+function installmysql(){
+	#install mysql
+    apt-get install -y mysql-server mysql-client
+	# Install a low-end copy of the my.cnf to disable InnoDB
+	invoke-rc.d mysql stop
+	cat > /etc/mysql/conf.d/lowendbox.cnf <<END
+# These values override values from /etc/mysql/my.cnf
+[mysqld]
+key_buffer = 12M
+query_cache_limit = 256K
+query_cache_size = 4M
+init_connect='SET collation_connection = utf8_unicode_ci'
+init_connect='SET NAMES utf8' 
+character-set-server = utf8 
+collation-server = utf8_unicode_ci 
+skip-character-set-client-handshake
+default_tmp_storage_engine = MyISAM  #  -----  added for newer versions of mysql
+default_storage_engine = MyISAM
+skip-innodb
+#log-slow-queries=/var/log/mysql/slow-queries.log  --- error in newer versions of mysql
+[client]
+default-character-set = utf8
+END
+	invoke-rc.d mysql start
 }
-function installlnmp(){
+function installphp(){
+	#install PHP
+	apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
+	#edit php
+	invoke-rc.d php5-fpm stop
 	
-mkdir /var/www
-#install zip unzip
-apt-get install -y zip unzip
-#install mysql
-apt-get install -y mysql-server mysql-client
-echo -e 'skip-innodb' >> /etc/mysql/my.cnf
-#install PHP
-apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
-#edit php
-sed -i '/upload_max_filesize = 2M/s/2/8/g' /etc/php5/fpm/php.ini
-sed -i '/memory_limit = 128M/s/128/48/g' /etc/php5/fpm/php.ini
-sed -i "/listen = 127.0.0.1:9000/s/127.0.0.1:9000/\/var\/run\/php5-fpm.sock/g" /etc/php5/fpm/pool.d/www.conf
+	sed -i  s/'listen = 127.0.0.1:9000'/'listen = \/var\/run\/php5-fpm.sock'/ /etc/php5/fpm/pool.d/www-data.conf
+	sed -i  s/'^pm.max_children = [0-9]*'/'pm.max_children = 2'/ /etc/php5/fpm/pool.d/www-data.conf
+	sed -i  s/'^pm.start_servers = [0-9]*'/'pm.start_servers = 1'/ /etc/php5/fpm/pool.d/www-data.conf
+	sed -i  s/'^pm.min_spare_servers = [0-9]*'/'pm.min_spare_servers = 1'/ /etc/php5/fpm/pool.d/www-data.conf
+	sed -i  s/'^pm.max_spare_servers = [0-9]*'/'pm.max_spare_servers = 2'/ /etc/php5/fpm/pool.d/www-data.conf
+	sed -i  s/'memory_limit = 128M'/'memory_limit = 64M'/ /etc/php5/fpm/php.ini
+	sed -i  s/'short_open_tag = Off'/'short_open_tag = On'/ /etc/php5/fpm/php.ini
+	sed -i  s/'upload_max_filesize = 2M'/'upload_max_filesize = 8M'/ /etc/php5/fpm/php.ini
+	
+	invoke-rc.d php5-fpm start
+}
+function installnginx(){
 #install nginx
 apt-get -y install nginx-full
 # edit nginx
-rm /etc/nginx/sites-available/default
-cat >> /etc/nginx/sites-available/default <<EOF
+invoke-rc.d nginx stop
+
+if [ -f /etc/nginx/nginx.conf ]
+	then
+		# one worker for each CPU and max 1024 connections/worker
+		cpu_count=`grep -c ^processor /proc/cpuinfo`
+		sed -i \
+			"s/worker_processes [0-9]*;/worker_processes $cpu_count;/" \
+			/etc/nginx/nginx.conf
+		sed -i \
+			"s/worker_connections [0-9]*;/worker_connections 1024;/" \
+			/etc/nginx/nginx.conf
+ fi
+cat > /etc/nginx/sites-available/default <<EOF
 	server {
 	listen [::]:80 default ipv6only=on; ## listen for ipv6
 	listen 80;
@@ -109,8 +145,7 @@ cat  >> /etc/nginx/fastcgi_params <<EOF
 	fastcgi_intercept_errors on;
 EOF
 #wordpress
-rm /etc/nginx/wordpress.conf
-cat  >> /etc/nginx/wordpress.conf <<"EOF"
+cat  > /etc/nginx/wordpress.conf <<"EOF"
 	if (-d $request_filename){
     rewrite ^/(.*)([^/])$ /$1$2/ permanent;
 	}
@@ -125,7 +160,7 @@ cat  >> /etc/nginx/wordpress.conf <<"EOF"
 	}
 EOF
 #DZ
-cat  >> /etc/nginx/dz.conf <<"EOF"
+cat  > /etc/nginx/dz.conf <<"EOF"
 	rewrite ^([^\.]*)/topic-(.+)\.html$ $1/portal.php?mod=topic&topic=$2 last;
 	rewrite ^([^\.]*)/article-([0-9]+)-([0-9]+)\.html$ $1/portal.php?mod=view&aid=$2&page=$3 last;
 	rewrite ^([^\.]*)/forum-(\w+)-([0-9]+)\.html$ $1/forum.php?mod=forumdisplay&fid=$2&page=$3 last;
@@ -139,12 +174,31 @@ cat  >> /etc/nginx/dz.conf <<"EOF"
 	return 404;
 	}
 EOF
-#install sendmail
-apt-get install sendmail-bin sendmail
+
+invoke-rc.d nginx start
+}
+function init(){
+	remove_unneeded
+	install_dotdeb
+	echo "-----------" &&
+	echo "init successfully!" &&
+	echo "-----------"
+}
+function installlnmp(){
+if [ ! -d /var/www ];then
+        mkdir /var/www
+fi
+#install zip unzip sendmail
+apt-get install -y zip unzip sendmail-bin sendmail
+
+installmysql
+installphp
+installnginx
 #set web dir
 cd /var/www
 wget http://tennfyfile.qiniudn.com/phpMyAdmin.zip
 unzip phpMyAdmin.zip
+
 echo "-----------" &&
 echo "restart lnmp!" &&
 echo "-----------"
