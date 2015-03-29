@@ -61,13 +61,13 @@ function install_dotdeb {
 }
 function installmysql(){
 	#install mysql
-    apt-get install -y mysql-server mysql-client
+    apt-get install -y mysql-server-5.5 mysql-client-5.5
 	# Install a low-end copy of the my.cnf to disable InnoDB
 	invoke-rc.d mysql stop
 	cat > /etc/mysql/conf.d/lowendbox.cnf <<END
 # These values override values from /etc/mysql/my.cnf
 [mysqld]
-key_buffer = 12M
+key_buffer_size = 12M
 query_cache_limit = 256K
 query_cache_size = 4M
 init_connect='SET collation_connection = utf8_unicode_ci'
