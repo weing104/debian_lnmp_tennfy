@@ -130,7 +130,8 @@ cat > /etc/nginx/sites-available/default <<EOF
 	fastcgi_pass unix:/var/run/php5-fpm.sock;
 	fastcgi_index index.php;
 	include fastcgi_params;
-EOF	
+EOF
+
 cat >> /etc/nginx/sites-available/default <<"EOF"	
 	fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;	
 	}
@@ -238,6 +239,7 @@ function addvirtualhost(){
         fastcgi_index index.php;
         include fastcgi_params;
 EOF
+
 cat  >> /etc/nginx/conf.d/${hostname}.conf <<"EOF"      
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
 	}
