@@ -63,7 +63,7 @@ function installmysql(){
 	#install mysql
     apt-get install -y mysql-server-5.5 mysql-client-5.5
 	# Install a low-end copy of the my.cnf to disable InnoDB
-	invoke-rc.d mysql stop
+	/etc/init.d/mysql stop
 	cat > /etc/mysql/conf.d/lowendbox.cnf <<END
 # These values override values from /etc/mysql/my.cnf
 [mysqld]
@@ -81,13 +81,13 @@ skip-innodb
 [client]
 default-character-set = utf8
 END
-	invoke-rc.d mysql start
+	/etc/init.d/mysql start
 }
 function installphp(){
 	#install PHP
 	apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
 	#edit php
-	invoke-rc.d php5-fpm stop
+	/etc/init.d/php5-fpm stop
 	
 	sed -i  s/'listen = 127.0.0.1:9000'/'listen = \/var\/run\/php5-fpm.sock'/ /etc/php5/fpm/pool.d/www.conf
 	sed -i  s/'^pm.max_children = [0-9]*'/'pm.max_children = 2'/ /etc/php5/fpm/pool.d/www.conf
@@ -98,7 +98,7 @@ function installphp(){
 	sed -i  s/'short_open_tag = Off'/'short_open_tag = On'/ /etc/php5/fpm/php.ini
 	sed -i  s/'upload_max_filesize = 2M'/'upload_max_filesize = 8M'/ /etc/php5/fpm/php.ini
 	
-	invoke-rc.d php5-fpm start
+	/etc/init.d/php5-fpm start
 }
 function installnginx(){
 #install nginx
@@ -221,8 +221,10 @@ function addvirtualhost(){
 	read hostname
 	echo "input url rewrite rule name(wordpress  or dz):"
 	read rewriterule
-	rm /etc/nginx/conf.d/${hostname}.conf
-	cat  >> /etc/nginx/conf.d/${hostname}.conf <<EOF
+	
+	/etc/init.d/nginx stop
+	
+	cat > /etc/nginx/conf.d/${hostname}.conf <<EOF
 	server {
 	listen 80;
 	#ipv6
@@ -252,7 +254,7 @@ chown -R www-data /var/www
 cat  >> /var/www/${hostname}/info.php <<EOF
 	<?php phpinfo(); ?>
 EOF
-/etc/init.d/nginx restart
+/etc/init.d/nginx start
 echo "-----------" &&
 echo "add successfully!" &&
 echo "-----------"
