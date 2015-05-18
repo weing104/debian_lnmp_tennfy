@@ -104,7 +104,7 @@ function installnginx(){
 #install nginx
 apt-get -y install nginx-full
 # edit nginx
-invoke-rc.d nginx stop
+/etc/init.d/nginx stop
 
 if [ -f /etc/nginx/nginx.conf ]
 	then
@@ -178,7 +178,7 @@ cat  > /etc/nginx/dz.conf <<"EOF"
 	}
 EOF
 
-invoke-rc.d nginx start
+/etc/init.d/nginx start
 }
 function init(){
 	remove_unneeded
