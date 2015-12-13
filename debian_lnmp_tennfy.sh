@@ -36,7 +36,7 @@ function remove_unneeded {
     then
         invoke-rc.d sendmail stop
     fi
-	DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge sendmail* apache2* samba* bind9* nscd
+	DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge apache2* samba* bind9* nscd
 	invoke-rc.d saslauthd stop
 	invoke-rc.d xinetd stop
 	update-rc.d saslauthd disable
@@ -61,25 +61,25 @@ function install_dotdeb {
 }
 function installmysql(){
 	#install mysql
-    apt-get install -y mysql-server-5.5 mysql-client-5.5
+    apt-get install -y mysql-server mysql-client
 	# Install a low-end copy of the my.cnf to disable InnoDB
 	/etc/init.d/mysql stop
 	cat > /etc/mysql/conf.d/lowendbox.cnf <<END
-# These values override values from /etc/mysql/my.cnf
-[mysqld]
-key_buffer_size = 12M
-query_cache_limit = 256K
-query_cache_size = 4M
-init_connect='SET collation_connection = utf8_unicode_ci'
-init_connect='SET NAMES utf8' 
-character-set-server = utf8 
-collation-server = utf8_unicode_ci 
-skip-character-set-client-handshake
-default_storage_engine = MyISAM
-skip-innodb
-#log-slow-queries=/var/log/mysql/slow-queries.log  --- error in newer versions of mysql
-[client]
-default-character-set = utf8
+	# These values override values from /etc/mysql/my.cnf
+	[mysqld]
+	key_buffer_size = 12M
+	query_cache_limit = 256K
+	query_cache_size = 4M
+	init_connect='SET collation_connection = utf8_unicode_ci'
+	init_connect='SET NAMES utf8' 
+	character-set-server = utf8 
+	collation-server = utf8_unicode_ci 
+	skip-character-set-client-handshake
+	default_storage_engine = MyISAM
+	skip-innodb
+	#log-slow-queries=/var/log/mysql/slow-queries.log  --- error in newer versions of mysql
+	[client]
+	default-character-set = utf8
 END
 	/etc/init.d/mysql start
 }
@@ -101,12 +101,12 @@ function installphp(){
 	/etc/init.d/php5-fpm start
 }
 function installnginx(){
-#install nginx
-apt-get -y install nginx-full
-# edit nginx
-/etc/init.d/nginx stop
+	#install nginx
+	apt-get -y install nginx-full
+	# edit nginx
+	/etc/init.d/nginx stop
 
-if [ -f /etc/nginx/nginx.conf ]
+	if [ -f /etc/nginx/nginx.conf ]
 	then
 		# one worker for each CPU and max 1024 connections/worker
 		cpu_count=`grep -c ^processor /proc/cpuinfo`
@@ -116,8 +116,8 @@ if [ -f /etc/nginx/nginx.conf ]
 		sed -i \
 			"s/worker_connections [0-9]*;/worker_connections 1024;/" \
 			/etc/nginx/nginx.conf
- fi
-cat > /etc/nginx/sites-available/default <<EOF
+	fi
+	cat > /etc/nginx/sites-available/default <<EOF
 	server {
 	listen [::]:80 default ipv6only=on; ## listen for ipv6
 	listen 80;
@@ -132,12 +132,12 @@ cat > /etc/nginx/sites-available/default <<EOF
 	include fastcgi_params;
 EOF
 
-cat >> /etc/nginx/sites-available/default <<"EOF"	
+	cat >> /etc/nginx/sites-available/default <<"EOF"	
 	fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;	
 	}
 	}
 EOF
-cat  >> /etc/nginx/fastcgi_params <<EOF
+	cat  >> /etc/nginx/fastcgi_params <<EOF
 	fastcgi_connect_timeout 60;
 	fastcgi_send_timeout 180;
 	fastcgi_read_timeout 180;
@@ -148,7 +148,7 @@ cat  >> /etc/nginx/fastcgi_params <<EOF
 	fastcgi_intercept_errors on;
 EOF
 #wordpress
-cat  > /etc/nginx/wordpress.conf <<"EOF"
+	cat  > /etc/nginx/wordpress.conf <<"EOF"
 	if (-d $request_filename){
     rewrite ^/(.*)([^/])$ /$1$2/ permanent;
 	}
@@ -163,7 +163,7 @@ cat  > /etc/nginx/wordpress.conf <<"EOF"
 	}
 EOF
 #DZ
-cat  > /etc/nginx/dz.conf <<"EOF"
+	cat  > /etc/nginx/dz.conf <<"EOF"
 	rewrite ^([^\.]*)/topic-(.+)\.html$ $1/portal.php?mod=topic&topic=$2 last;
 	rewrite ^([^\.]*)/article-([0-9]+)-([0-9]+)\.html$ $1/portal.php?mod=view&aid=$2&page=$3 last;
 	rewrite ^([^\.]*)/forum-(\w+)-([0-9]+)\.html$ $1/forum.php?mod=forumdisplay&fid=$2&page=$3 last;
@@ -178,7 +178,7 @@ cat  > /etc/nginx/dz.conf <<"EOF"
 	}
 EOF
 
-/etc/init.d/nginx start
+	/etc/init.d/nginx start
 }
 function init(){
 	remove_unneeded
@@ -188,83 +188,71 @@ function init(){
 	echo "-----------"
 }
 function installlnmp(){
-if [ ! -d /var/www ];then
+	if [ ! -d /var/www ];then
         mkdir /var/www
-fi
-#install zip unzip sendmail
-apt-get install -y zip unzip sendmail-bin sendmail
+	fi
+	#install zip unzip sendmail
+	apt-get install -y zip unzip sendmail-bin sendmail
 
-installmysql
-installphp
-installnginx
-#set web dir
-cd /var/www
-wget --no-check-certificate https://raw.githubusercontent.com/tennfy/debian_lnmp_tennfy/master/phpMyAdmin.zip
-unzip phpMyAdmin.zip
+	installmysql
+	installphp
+	installnginx
+	
+	#set web dir
+	cd /var/www
+	wget --no-check-certificate https://raw.githubusercontent.com/tennfy/debian_lnmp_tennfy/master/phpMyAdmin.zip
+	unzip phpMyAdmin.zip
 
-echo "-----------" &&
-echo "restart lnmp!" &&
-echo "-----------"
-#restart lnmp
-i1=`ps -ef|grep -E "/usr/sbin/apach"|grep -v grep|awk '{print $2}'`
-kill -9 $i1
-/etc/init.d/nginx restart
-/etc/init.d/php5-fpm restart
-/etc/init.d/mysql restart
-echo "-----------" &&
-echo "install successfully!" &&
-echo "-----------"
+	echo "-----------" &&
+	echo "restart lnmp!" &&
+	echo "-----------"
+	#restart lnmp
+	i1=`ps -ef|grep -E "/usr/sbin/apach"|grep -v grep|awk '{print $2}'`
+	kill -9 $i1
+	/etc/init.d/nginx restart
+	/etc/init.d/php5-fpm restart
+	/etc/init.d/mysql restart
+	echo "-----------" &&
+	echo "install successfully!" &&
+	echo "-----------"
 }
 
 function addvirtualhost(){
 	echo "input hostname(like tennfy.com):"
 	read hostname
-	echo "input url rewrite rule name(wordpress  or dz):"
+	echo "input url rewrite rule name(wordpress or dz):"
 	read rewriterule
-	
+	#stop nginx
 	/etc/init.d/nginx stop
 	
-	cat > /etc/nginx/conf.d/${hostname}.conf <<EOF
-	server {
-	listen 80;
-	#ipv6
-    #listen [::]:80 default_server;
-    root /var/www/${hostname};
-    index index.php index.html index.htm;
-    server_name ${hostname} www.${hostname};
-    location / {
-		include ${rewriterule}.conf;
-    }
-	location ~ \.php$ {
-		fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass unix:/var/run/php5-fpm.sock;
-        fastcgi_index index.php;
-        include fastcgi_params;
-EOF
-
-cat  >> /etc/nginx/conf.d/${hostname}.conf <<"EOF"      
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-	}
-	}
-EOF
-mkdir /var/www/${hostname}
-cd /var/www/${hostname}
-chmod -R 777 /var/www
-chown -R www-data /var/www
-cat  >> /var/www/${hostname}/info.php <<EOF
+    #get nginx configure file template and edit
+	cd /etc/nginx/conf.d	
+	wget 
+	sed -i 's/tennfy.com/${hostname}/g' host.conf
+	sed -i 's/rewrite/${rewriterule}/g' host.conf
+	mv host.conf ${hostname}.conf
+	
+	#new a virtualhost dir
+	mkdir /var/www/${hostname}
+	cd /var/www/${hostname}
+	chmod -R 777 /var/www
+	chown -R www-data /var/www
+	
+	cat  >> /var/www/${hostname}/info.php <<EOF
 	<?php phpinfo(); ?>
 EOF
-/etc/init.d/nginx start
-echo "-----------" &&
-echo "add successfully!" &&
-echo "-----------"
+
+	/etc/init.d/nginx start
+	echo "-----------" &&
+	echo "add successfully!" &&
+	echo "-----------"
 }
 
 function repaire502(){
     echo "input hostname(like tennfy.com):"
 	read hostname
-	sed -i "/listen = \/var\/run\/php5-fpm.sock/s/\/var\/run\/php5-fpm.sock/127.0.0.1:9000/g" /etc/php5/fpm/pool.d/www.conf
-	sed -i "/unix:\/var\/run\/php5-fpm.sock/s/unix:\/var\/run\/php5-fpm.sock/127.0.0.1:9000/g" /etc/nginx/conf.d/${hostname}.conf
+	sed -i 's/listen = \/var\/run\/php5-fpm.sock/\/var\/run\/php5-fpm.sock/127.0.0.1:9000/g' /etc/php5/fpm/pool.d/www.conf
+	sed -i 's/unix:\/var\/run\/php5-fpm.sock/unix:\/var\/run\/php5-fpm.sock/127.0.0.1:9000/g' /etc/nginx/conf.d/${hostname}.conf
 	/etc/init.d/nginx restart
 	/etc/init.d/php5-fpm restart
 	echo "-----------" &&
