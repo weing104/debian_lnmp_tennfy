@@ -252,18 +252,6 @@ EOF
 	echo "-----------"
 }
 
-function repaire502(){
-    echo "input hostname(like tennfy.com):"
-	read hostname
-	sed -i 's/listen = \/var\/run\/php5-fpm.sock/\/var\/run\/php5-fpm.sock/127.0.0.1:9000/g' /etc/php5/fpm/pool.d/www.conf
-	sed -i 's/unix:\/var\/run\/php5-fpm.sock/unix:\/var\/run\/php5-fpm.sock/127.0.0.1:9000/g' /etc/nginx/conf.d/${hostname}.conf
-	/etc/init.d/nginx restart
-	/etc/init.d/php5-fpm restart
-	echo "-----------" &&
-    echo "repaire successfully!" &&
-    echo "-----------"
-}
-
 ######################### Initialization ################################################
 check_sanity
 action=$1
@@ -274,9 +262,6 @@ install)
     ;;
 addvhost)
     addvirtualhost
-    ;;
-repaire)
-    repaire502
     ;;
 init)
     init
