@@ -150,6 +150,10 @@ function installnginx(){
 		chmod +x /etc/init.d/nginx
 	fi
 	
+	#add nginx system variables
+	sed -i 's/\/usr\/sbin/\/usr\/sbin:\/usr\/sbin\/nginx/g' /etc/profile
+	source /etc/profile
+	
 	#add wordpress rewrite rule
 	cat  > /etc/nginx/wordpress.conf <<"EOF"
 	if (-d $request_filename){
@@ -232,8 +236,8 @@ function addvirtualhost(){
     #get nginx configure file template and edit
 	cd /etc/nginx/conf.d	
 	wget --no-check-certificate https://raw.githubusercontent.com/tennfy/debian_lnmp_tennfy/master/conf/host.conf
-	sed -i 's/tennfy.com/${hostname}/g' host.conf
-	sed -i 's/rewrite/${rewriterule}/g' host.conf
+	sed -i 's/tennfy.com/'${hostname}'/g' host.conf
+	sed -i 's/rewrite/'${rewriterule}'/g' host.conf
 	mv host.conf ${hostname}.conf
 	
 	#new a virtualhost dir
