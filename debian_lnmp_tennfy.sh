@@ -61,7 +61,7 @@ function install_dotdeb {
 }
 function installmysql(){
 	#install mysql
-    apt-get install -y mysql-server mysql-client
+    apt-get install -y mysql-server-core-5.5 mysql-client-5.5 mysql-server-5.5
 	# Install a low-end copy of the my.cnf to disable InnoDB
 	/etc/init.d/mysql stop
 	cat > /etc/mysql/conf.d/lowendbox.cnf <<END
@@ -227,7 +227,7 @@ function addvirtualhost(){
 	
     #get nginx configure file template and edit
 	cd /etc/nginx/conf.d	
-	wget 
+	wget --no-check-certificate https://raw.githubusercontent.com/tennfy/debian_lnmp_tennfy/master/conf/host.conf
 	sed -i 's/tennfy.com/${hostname}/g' host.conf
 	sed -i 's/rewrite/${rewriterule}/g' host.conf
 	mv host.conf ${hostname}.conf
