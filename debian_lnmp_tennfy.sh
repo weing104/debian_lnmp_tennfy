@@ -32,10 +32,6 @@ function die {
 	exit 1
 }
 function remove_unneeded {
-	if [ -f /usr/lib/sm.bin/smtpd ]
-    then
-        invoke-rc.d sendmail stop
-    fi
 	DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge apache2* samba* bind9* nscd
 	invoke-rc.d saslauthd stop
 	invoke-rc.d xinetd stop
@@ -44,24 +40,26 @@ function remove_unneeded {
 }
 function install_dotdeb {
 	# add dotdeb.
-	dv=$(cut -d. -f1 /etc/debian_version)
-	if [ "$dv" = "7" ]; then
-	echo -e 'deb http://packages.dotdeb.org wheezy all' >> /etc/apt/sources.list
-    echo -e 'deb-src http://packages.dotdeb.org wheezy all' >> /etc/apt/sources.list
-	elif [ "$dv" = "6" ]; then
-    echo -e 'deb http://packages.dotdeb.org squeeze all' >> /etc/apt/sources.list
-    echo -e 'deb-src http://packages.dotdeb.org squeeze all' >> /etc/apt/sources.list
-	fi
-
+	#dv=$(cut -d. -f1 /etc/debian_version)
+	#if [ "$dv" = "7" ]; then
+	#echo -e 'deb http://packages.dotdeb.org wheezy all' >> /etc/apt/sources.list
+    #echo -e 'deb-src http://packages.dotdeb.org wheezy all' >> /etc/apt/sources.list
+	#elif [ "$dv" = "6" ]; then
+    #echo -e 'deb http://packages.dotdeb.org squeeze all' >> /etc/apt/sources.list
+    #echo -e 'deb-src http://packages.dotdeb.org squeeze all' >> /etc/apt/sources.list
+	#fi
+	echo -e 'deb http://packages.dotdeb.org stable all' >> /etc/apt/sources.list
+    echo -e 'deb-src http://packages.dotdeb.org stable all' >> /etc/apt/sources.list
+   
 	#import GnuPG key
 	wget http://www.dotdeb.org/dotdeb.gpg
 	cat dotdeb.gpg | apt-key add -
 	rm dotdeb.gpg
-	apt-get update
+	apt-get update && apt-get upgrade
 }
 function installmysql(){
 	#install mysql
-    apt-get install -y mysql-server-core-5.5 mysql-client-5.5 mysql-server-5.5
+    apt-get install -y mysql-client mysql-server
 	# Install a low-end copy of the my.cnf to disable InnoDB
 	/etc/init.d/mysql stop
 	cat > /etc/mysql/conf.d/lowendbox.cnf <<END
