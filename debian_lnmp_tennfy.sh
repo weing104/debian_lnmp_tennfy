@@ -31,12 +31,35 @@ function die {
 	echo "ERROR: $1" > /dev/null 1>&2
 	exit 1
 }
+function Timezone()
+{
+	rm -rf /etc/localtime
+	ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+	echo '[ntp Installing] ******************************** >>'
+	apt-get install -y ntpdate
+	ntpdate -u pool.ntp.org
+	StartDate=$(date)
+	StartDateSecond=$(date +%s)
+	echo "Start time: ${StartDate}"
+}
+function CloseSelinux()
+{
+	[ -s /etc/selinux/config ] && sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config;
+}
 function remove_unneeded {
 	DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge apache2* samba* bind9* nscd
 	invoke-rc.d saslauthd stop
 	invoke-rc.d xinetd stop
 	update-rc.d saslauthd disable
 	update-rc.d xinetd disable
+	
+	apt-get update
+	for packages in build-essential gcc g++ cmake make ntp logrotate automake patch autoconf autoconf2.13 re2c wget flex cron libzip-dev libc6-dev rcconf bison cpp binutils unzip tar bzip2 libncurses5-dev libncurses5 libtool libevent-dev libpcre3 libpcre3-dev libpcrecpp0 libssl-dev zlibc openssl libsasl2-dev libxml2 libxml2-dev libltdl3-dev libltdl-dev zlib1g zlib1g-dev libbz2-1.0 libbz2-dev libglib2.0-0 libglib2.0-dev libpng3 libfreetype6 libfreetype6-dev libjpeg62 libjpeg62-dev libjpeg-dev libpng-dev libpng12-0 libpng12-dev curl libcurl3  libpq-dev libpq5 gettext libcurl4-gnutls-dev  libcurl4-openssl-dev libcap-dev ftp openssl expect zip unzip sendmail-bin sendmail
+	do
+			echo "[${packages} Installing] ************************************************** >>"
+			apt-get install -y $packages --force-yes;apt-get -fy install;apt-get -y autoremove
+	done
 }
 function install_dotdeb {
 	# add dotdeb.
@@ -100,52 +123,34 @@ function installphp(){
 }
 function installnginx(){
 	#install nginx
-	apt-get -y install nginx-full
-	# edit nginx
-	/etc/init.d/nginx stop
-
+	wget http://nginx.org/download/nginx-1.8.0.tar.gz
+	tar -zxvf nginx-1.8.0.tar.gz
+	cd nginx-1.8.0
+	./configure --user=www-data --group=www-data --sbin-path=/usr/sbin/nginx/nginx --prefix=/etc/nginx --conf-path=/etc/nginx/nginx.conf --pid-path=/usr/sbin/nginx/nginx.pid --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --with-http_ssl_module  --with-http_gzip_static_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module --without-http_uwsgi_module --without-http_scgi_module 
+	make
+	make install
+	
+	# add conf.d dir
+	if [ ! -d /etc/nginx/conf.d ];then
+        mkdir /etc/nginx/conf.d
+	fi
+    
+	#add nginx configuration file
 	if [ -f /etc/nginx/nginx.conf ]
 	then
-		# one worker for each CPU and max 1024 connections/worker
-		cpu_count=`grep -c ^processor /proc/cpuinfo`
-		sed -i \
-			"s/worker_processes [0-9]*;/worker_processes $cpu_count;/" \
-			/etc/nginx/nginx.conf
-		sed -i \
-			"s/worker_connections [0-9]*;/worker_connections 1024;/" \
-			/etc/nginx/nginx.conf
+	    
+	    cd /etc/nginx
+	    rm /etc/nginx/nginx.conf
+		wget --no-check-certificate https://raw.githubusercontent.com/tennfy/debian_lnmp_tennfy/master/conf/nginx.conf 
+		
+		cd /etc/init.d
+		wget --no-check-certificate https://raw.githubusercontent.com/tennfy/debian_lnmp_tennfy/master/conf/nginx 
+		
+		chmod +x /etc/nginx/nginx.conf
+		chmod +x /etc/init.d/nginx
 	fi
-	cat > /etc/nginx/sites-available/default <<EOF
-	server {
-	listen [::]:80 default ipv6only=on; ## listen for ipv6
-	listen 80;
-	server_name localhost;
-	root /var/www/; 
-	index index.php index.html index.htm;
-	location ~ \.php$ {
-	fastcgi_split_path_info ^(.+\.php)(/.+)$;
-	# With php5-fpm:
-	fastcgi_pass unix:/var/run/php5-fpm.sock;
-	fastcgi_index index.php;
-	include fastcgi_params;
-EOF
-
-	cat >> /etc/nginx/sites-available/default <<"EOF"	
-	fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;	
-	}
-	}
-EOF
-	cat  >> /etc/nginx/fastcgi_params <<EOF
-	fastcgi_connect_timeout 60;
-	fastcgi_send_timeout 180;
-	fastcgi_read_timeout 180;
-	fastcgi_buffer_size 128k;
-	fastcgi_buffers 4 256k;
-	fastcgi_busy_buffers_size 256k;
-	fastcgi_temp_file_write_size 256k;
-	fastcgi_intercept_errors on;
-EOF
-#wordpress
+	
+	#add wordpress rewrite rule
 	cat  > /etc/nginx/wordpress.conf <<"EOF"
 	if (-d $request_filename){
     rewrite ^/(.*)([^/])$ /$1$2/ permanent;
@@ -160,7 +165,7 @@ EOF
     rewrite (.*) /index.php;
 	}
 EOF
-#DZ
+    #add Discuz rewrite rule
 	cat  > /etc/nginx/dz.conf <<"EOF"
 	rewrite ^([^\.]*)/topic-(.+)\.html$ $1/portal.php?mod=topic&topic=$2 last;
 	rewrite ^([^\.]*)/article-([0-9]+)-([0-9]+)\.html$ $1/portal.php?mod=view&aid=$2&page=$3 last;
@@ -181,6 +186,8 @@ EOF
 function init(){
 	remove_unneeded
 	install_dotdeb
+	Timezone
+	CloseSelinux
 	echo "-----------" &&
 	echo "init successfully!" &&
 	echo "-----------"
@@ -189,8 +196,6 @@ function installlnmp(){
 	if [ ! -d /var/www ];then
         mkdir /var/www
 	fi
-	#install zip unzip sendmail
-	apt-get install -y zip unzip sendmail-bin sendmail
 
 	installmysql
 	installphp
@@ -220,6 +225,7 @@ function addvirtualhost(){
 	read hostname
 	echo "input url rewrite rule name(wordpress or dz):"
 	read rewriterule
+	
 	#stop nginx
 	/etc/init.d/nginx stop
 	
