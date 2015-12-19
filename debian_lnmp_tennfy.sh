@@ -24,7 +24,7 @@ PhpVersion='php-5.6.16'
 NginxVersion='nginx-1.8.0'
 
 
-function check_sanity {
+function check_sanity() {
 	# Do some sanity checking.
 	if [ $(/usr/bin/id -u) != "0" ]
 	then
@@ -37,7 +37,7 @@ function check_sanity {
 	fi
 }
 
-function die {
+function die() {
 	echo "ERROR: $1" > /dev/null 1>&2
 	exit 1
 }
@@ -66,9 +66,9 @@ function InstallLibiconv()
 		echo "[OK] ${LibiconvVersion} install completed.";
 	else
 		echo '[OK] libiconv is installed!';
-	fi;
+	fi
 }
-function remove_unneeded {
+function remove_unneeded() {
 	DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge apache2* samba* bind9* nscd
 	invoke-rc.d saslauthd stop
 	invoke-rc.d xinetd stop
@@ -82,7 +82,7 @@ function remove_unneeded {
 			apt-get install -y $packages --force-yes;apt-get -fy install;apt-get -y autoremove
 	done
 }
-function install_dotdeb {
+function install_dotdeb() {
 	echo -e 'deb http://packages.dotdeb.org stable all' >> /etc/apt/sources.list
     echo -e 'deb-src http://packages.dotdeb.org stable all' >> /etc/apt/sources.list
    
@@ -92,7 +92,7 @@ function install_dotdeb {
 	rm dotdeb.gpg
 	apt-get update
 }
-function downloadfiles{
+function downloadfiles(){
     #download libiconv
 	wget http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz
 	tar -zxvf libiconv-1.14.tar.gz -C ${lnmpdir}/packages	
@@ -273,9 +273,6 @@ install)
 addvhost)
     addvirtualhost
     ;;
-init)
-    init
-    ;;	
 *)
     echo "Arguments error! [${action} ]"
     echo "Usage: `basename $0` {init|install|addvhost|repaire}"
