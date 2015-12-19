@@ -285,8 +285,8 @@ function addsslvirtualhost(){
 	mv /etc/nginx/conf.d/sslhost.conf /etc/nginx/conf.d/${hostname}.conf
 	sed -i 's/tennfy.com/'${hostname}'/g' /etc/nginx/conf.d/${hostname}.conf
 	sed -i 's/rewrite/'${rewriterule}'/g' /etc/nginx/conf.d/${hostname}.conf	
-	sed -i 's/tennfy_certificate/'${certificate}'/g' /etc/nginx/conf.d/${hostname}.conf	
-	sed -i 's/tennfy_privatekey/'${privatekey}'/g' /etc/nginx/conf.d/${hostname}.conf	
+	sed -i 's#tennfy_certificate#'${certificate}'#g' /etc/nginx/conf.d/${hostname}.conf	
+	sed -i 's#tennfy_privatekey#'${privatekey}'#g' /etc/nginx/conf.d/${hostname}.conf	
 	#new a virtualhost dir
 	mkdir /var/www/${hostname}
 	cd /var/www/${hostname}
@@ -318,8 +318,8 @@ function addgoogle(){
     cp  ${lnmpdir}/conf/google.conf /etc/nginx/conf.d
 	mv /etc/nginx/conf.d/google.conf /etc/nginx/conf.d/${hostname}.conf
 	sed -i 's/tennfy.com/'${hostname}'/g' /etc/nginx/conf.d/${hostname}.conf
-	sed -i 's/tennfy_certificate/'${certificate}'/g' /etc/nginx/conf.d/${hostname}.conf	
-	sed -i 's/tennfy_privatekey/'${privatekey}'/g' /etc/nginx/conf.d/${hostname}.conf	
+	sed -i 's#tennfy_certificate#'${certificate}'#g' /etc/nginx/conf.d/${hostname}.conf	
+	sed -i 's#tennfy_privatekey#'${privatekey}'#g' /etc/nginx/conf.d/${hostname}.conf	
 	/etc/init.d/nginx start
 	echo "-------------------------------" &&
 	echo "   add google successfully!    " &&
