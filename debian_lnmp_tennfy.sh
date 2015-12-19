@@ -76,7 +76,7 @@ function remove_unneeded() {
 	update-rc.d xinetd disable
 	
 	apt-get update
-	for packages in build-essential gcc g++ cmake make ntp logrotate automake patch autoconf autoconf2.13 re2c wget flex cron libzip-dev libc6-dev rcconf bison cpp binutils unzip tar bzip2 libncurses5-dev libncurses5 libtool libevent-dev libpcre3 libpcre3-dev libpcrecpp0 libssl-dev zlibc openssl libsasl2-dev libxml2 libxml2-dev libltdl3-dev libltdl-dev zlib1g zlib1g-dev libbz2-1.0 libbz2-dev libglib2.0-0 libglib2.0-dev libpng3 libfreetype6 libfreetype6-dev libjpeg62 libjpeg62-dev libjpeg-dev libpng-dev libpng12-0 libpng12-dev curl libcurl3  libpq-dev libpq5 gettext libcurl4-gnutls-dev  libcurl4-openssl-dev libcap-dev ftp openssl expect zip unzip sendmail-bin sendmail git
+	for packages in build-essential gcc g++ cmake make ntp logrotate automake patch autoconf autoconf2.13 re2c wget flex cron libzip-dev libc6-dev rcconf bison cpp binutils unzip tar bzip2 libncurses5-dev libncurses5 libtool libevent-dev libpcre3 libpcre3-dev libpcrecpp0 libssl-dev zlibc openssl libsasl2-dev libxml2 libxml2-dev libltdl3-dev libltdl-dev zlib1g zlib1g-dev libbz2-1.0 libbz2-dev libglib2.0-0 libglib2.0-dev libpng3 libfreetype6 libfreetype6-dev libjpeg62 libjpeg62-dev libjpeg-dev libpng-dev libpng12-0 libpng12-dev curl libcurl3  libpq-dev libpq5 gettext libcurl4-gnutls-dev  libcurl4-openssl-dev libcap-dev ftp expect zip unzip sendmail-bin sendmail git
 	do
 			echo "[${packages} Installing] ************************************************** >>"
 			apt-get install -y $packages --force-yes;apt-get -fy install;apt-get -y autoremove
@@ -108,6 +108,11 @@ function downloadfiles(){
 	#download configure files
 	wget --no-check-certificate https://raw.githubusercontent.com/tennfy/debian_lnmp_tennfy/master/conf.tar.gz
 	tar -zxvf conf.tar.gz -C ${lnmpdir}/conf
+	#download nginx module
+	git clone https://github.com/cuber/ngx_http_google_filter_module
+    git clone https://github.com/yaoweibin/ngx_http_substitutions_filter_module
+	cp -r ngx_http_google_filter_module ${lnmpdir}/packages/${NginxVersion}
+	cp -r ngx_http_substitutions_filter_module ${lnmpdir}/packages/${NginxVersion}
 }
 function installmysql(){
     echo "---------------------------------"
@@ -153,7 +158,7 @@ function installnginx(){
 	if [ ! -f /usr/sbin/nginx ]
 	then
 		cd ${lnmpdir}/packages/${NginxVersion}
-		./configure --user=www-data --group=www-data --sbin-path=/usr/sbin/nginx --prefix=/etc/nginx --conf-path=/etc/nginx/nginx.conf --pid-path=/var/run/nginx.pid --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --with-http_ssl_module  --with-http_gzip_static_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module --without-http_uwsgi_module --without-http_scgi_module 
+		./configure --user=www-data --group=www-data --sbin-path=/usr/sbin/nginx --prefix=/etc/nginx --conf-path=/etc/nginx/nginx.conf --pid-path=/var/run/nginx.pid --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --with-http_ssl_module  --with-http_gzip_static_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module --without-http_uwsgi_module --without-http_scgi_module  --add-module=ngx_http_google_filter_module --add-module=ngx_http_substitutions_filter_module
 		make
 		make install
 		cd /root
@@ -218,7 +223,7 @@ function installlnmp(){
 	installphp
 	installnginx	
 	#set web dir
-	cp 	${lnmpdir}/packages/phpMyAdmin /var/www 
+	cp -r ${lnmpdir}/packages/phpMyAdmin /var/www 
 	#restart lnmp
 	echo "---------------------------------" &&
 	echo "         restart lnmp!           " &&
@@ -261,6 +266,65 @@ EOF
 	echo "   add vhost successfully!     " &&
 	echo "-------------------------------"
 }
+function addsslvirtualhost(){
+    echo "---------------------------------"
+	echo "    begin to add ssl vhost       "
+    echo "---------------------------------"
+	echo "please input hostname(like tennfy.com):"
+	read hostname
+	echo "please input url rewrite rule name(wordpress or discuz):"
+	read rewriterule	
+	echo "please input ssl certificate file path:"
+	read certificate
+	echo "please input ssl privatekey file path:"
+	read privatekey	
+	#stop nginx
+	/etc/init.d/nginx stop	
+    #get nginx configure file template and edit
+    cp  ${lnmpdir}/conf/sslhost.conf /etc/nginx/conf.d
+	mv /etc/nginx/conf.d/sslhost.conf /etc/nginx/conf.d/${hostname}.conf
+	sed -i 's/tennfy.com/'${hostname}'/g' /etc/nginx/conf.d/${hostname}.conf
+	sed -i 's/rewrite/'${rewriterule}'/g' /etc/nginx/conf.d/${hostname}.conf	
+	sed -i 's/tennfy_certificate/'${certificate}'/g' /etc/nginx/conf.d/${hostname}.conf	
+	sed -i 's/tennfy_privatekey/'${privatekey}'/g' /etc/nginx/conf.d/${hostname}.conf	
+	#new a virtualhost dir
+	mkdir /var/www/${hostname}
+	cd /var/www/${hostname}
+	chmod -R 777 /var/www
+	chown -R www-data:www-data /var/www
+	#add phpinfo file
+	cat  >> /var/www/${hostname}/info.php <<EOF
+	<?php phpinfo(); ?>
+EOF
+
+	/etc/init.d/nginx start
+	echo "-------------------------------" &&
+	echo "   add ssl vhost successfully! " &&
+	echo "-------------------------------"
+}
+function addgoogle(){
+	echo "---------------------------------"
+	echo "    begin to add google          "
+    echo "---------------------------------"
+	echo "please input hostname(like tennfy.com):"
+	read hostname
+	echo "please input ssl certificate file path:"
+	read certificate
+	echo "please input ssl privatekey file path:"
+	read privatekey	
+	#stop nginx
+	/etc/init.d/nginx stop	
+    #get nginx configure file template and edit
+    cp  ${lnmpdir}/conf/google.conf /etc/nginx/conf.d
+	mv /etc/nginx/conf.d/google.conf /etc/nginx/conf.d/${hostname}.conf
+	sed -i 's/tennfy.com/'${hostname}'/g' /etc/nginx/conf.d/${hostname}.conf
+	sed -i 's/tennfy_certificate/'${certificate}'/g' /etc/nginx/conf.d/${hostname}.conf	
+	sed -i 's/tennfy_privatekey/'${privatekey}'/g' /etc/nginx/conf.d/${hostname}.conf	
+	/etc/init.d/nginx start
+	echo "-------------------------------" &&
+	echo "   add google successfully!    " &&
+	echo "-------------------------------"
+}
 
 ######################### Initialization ################################################
 check_sanity
@@ -272,6 +336,12 @@ install)
     ;;
 addvhost)
     addvirtualhost
+    ;;
+addsslvhost)
+    addsslvirtualhost
+    ;;
+addgoogle)
+    addgoogle
     ;;
 *)
     echo "Arguments error! [${action} ]"
