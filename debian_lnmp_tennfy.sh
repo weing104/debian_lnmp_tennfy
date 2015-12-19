@@ -150,7 +150,7 @@ function installnginx(){
 	echo "    begin to install nginx       "
     echo "---------------------------------"
 	#install nginx
-	if [! -f /usr/sbin/nginx]
+	if [ ! -f /usr/sbin/nginx ]
 	then
 		cd ${lnmpdir}/packages/${NginxVersion}
 		./configure --user=www-data --group=www-data --sbin-path=/usr/sbin/nginx --prefix=/etc/nginx --conf-path=/etc/nginx/nginx.conf --pid-path=/var/run/nginx.pid --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --with-http_ssl_module  --with-http_gzip_static_module --without-mail_pop3_module --without-mail_imap_module --without-mail_smtp_module --without-http_uwsgi_module --without-http_scgi_module 
@@ -195,7 +195,7 @@ function init(){
 	echo "    begin to init system         "
     echo "---------------------------------"
     # create packages and conf directory
-	if [! -d ${lnmpdir}]
+	if [ ! -d ${lnmpdir}]
 	then 
 	    mkdir ${lnmpdir}
 		mkdir ${lnmpdir}/packages
@@ -265,7 +265,7 @@ EOF
 ######################### Initialization ################################################
 check_sanity
 action=$1
-[  -z $1 ] && action=install
+[ -z $1 ] && action=install
 case "$action" in
 install)
     installlnmp
