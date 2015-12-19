@@ -183,6 +183,8 @@ function installnginx(){
 	#add nginx system variables
 	sed -i 's/\/usr\/sbin/\/usr\/sbin:\/usr\/sbin\/nginx/g' /etc/profile
 	source /etc/profile	
+	#set nginx auto-start
+	update-rc.d nginx defaults
 	#add rewrite rule
 	cp 	${lnmpdir}/conf/wordpress.conf /etc/nginx
 	cp 	${lnmpdir}/conf/discuz.conf /etc/nginx
