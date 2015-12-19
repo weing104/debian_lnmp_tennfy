@@ -127,10 +127,6 @@ function installphp(){
     echo "---------------------------------"
 	echo "    begin to install php         "
     echo "---------------------------------"    
-	#cd ${lnmpdir}/packages/${PhpVersion}
-	#configure
-	#./configure --prefix=/etc/php5 --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-mysql=/usr/sbin/mysql --without-pear
-	
 	#install PHP
 	apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
 	#edit php
