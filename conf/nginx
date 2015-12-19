@@ -19,16 +19,16 @@ function NginxManagement()
 
 	[ "$selected" == 'exit' ] && exit;
 	if [ "$selected" == 'start' ]; then
-		/usr/sbin/nginx/nginx;
+		/usr/sbin/nginx;
 		ps x | grep 'nginx:' | grep -v 'grep' >/dev/null && echo "[OK] Nginx start";
 	elif [ "$selected" == 'stop' ]; then
-		kill -INT `cat /usr/sbin/nginx/nginx.pid` && echo "[OK] Nginx stop";
+		kill -INT `cat /var/run/nginx.pid` && echo "[OK] Nginx stop";
 	elif [ "$selected" == 'restart' ]; then
-		kill -INT `cat /usr/sbin/nginx/nginx.pid`;
-		/usr/sbin/nginx/nginx;
+		kill -INT `cat /var/run/nginx.pid`;
+		/usr/sbin/nginx;
 		ps x | grep 'nginx:' | grep -v 'grep' >/dev/null && echo "[OK] Nginx restart";
 	elif [ "$selected" == 'reload' ]; then
-		kill -HUP `cat /usr/sbin/nginx/nginx.pid` && echo "[OK] Nginx reload";
+		kill -HUP `cat /var/run/nginx.pid` && echo "[OK] Nginx reload";
 	else
 		NginxManagement;
 		return;
