@@ -195,7 +195,7 @@ function init(){
 	echo "    begin to init system         "
     echo "---------------------------------"
     # create packages and conf directory
-	if [ ! -d ${lnmpdir}]
+	if [ ! -d ${lnmpdir} ]
 	then 
 	    mkdir ${lnmpdir}
 		mkdir ${lnmpdir}/packages
