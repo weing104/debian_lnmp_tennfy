@@ -24,6 +24,8 @@ Cpunum=''
 RamTotal=''
 RamSwap=''
 RamSum=''
+StartDate=''
+StartDateSecond=''
 
 #Version
 MysqlVersion='mysql-5.5.47'
@@ -173,6 +175,7 @@ function installmysql()
 			
 			chmod +w /usr/local/mysql
 			chown -R mysql:mysql /usr/local/mysql
+			chown -R mysql /var/run/mysqld
 			#add configuration file
 			rm -f /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf
 			cp ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
@@ -354,6 +357,8 @@ function installlnmp(){
 	echo "---------------------------------" &&
 	echo "      install successfully!      " &&
 	echo "---------------------------------"
+	echo "Start time: ${StartDate}";
+	echo "Completion time: $(date) (Use: $[($(date +%s)-StartDateSecond)/60] minute)";
 }
 
 function addvirtualhost(){
