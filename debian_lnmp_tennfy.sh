@@ -163,22 +163,20 @@ function installmysql()
 	else
 		if [ ! -f /usr/local/mysql/bin/mysql ]
 		then
-			mkdir /var/lib/mysql /var/run/mysqld /etc/mysql
+			mkdir /var/lib/mysql /var/run/mysqld /etc/mysql /etc/mysql/conf.d
 			cd ${lnmpdir}/packages/${MysqlVersion}
 			groupadd mysql
 			useradd -s /sbin/nologin -g mysql mysql
 			cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DMYSQL_DATADIR=/var/lib/mysql -DMYSQL_TCP_PORT=3306 -DMYSQL_UNIX_ADDR=/var/run/mysqld/mysqld.sock -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DWITH_EXTRA_CHARSETS=complex -DWITH_READLINE=1 -DENABLED_LOCAL_INFILE=1 
 			make
 			make install
-			cd /root
+			
 			chmod +w /usr/local/mysql
 			chown -R mysql:mysql /usr/local/mysql
 			#add configuration file
 			rm -f /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf
 			cp ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
-			cp ${lnmpdir}/conf/mysql /etc/init.d/mysql
-			chmod +x /etc/init.d/mysql
-			/usr/local/mysql/scripts/mysql_install_db --user=mysql --defaults-file=/etc/mysql/my.cnf --basedir=/usr --datadir=/var/lib/mysql
+			/usr/local/mysql/scripts/mysql_install_db --user=mysql --defaults-file=/etc/mysql/my.cnf --basedir=/usr/local/mysql --datadir=/var/lib/mysql
 # EOF **********************************
 cat > /etc/ld.so.conf.d/mysql.conf<<EOF
 /usr/local/mysql/lib/mysql
@@ -193,13 +191,14 @@ EOF
 				ln -s /usr/local/mysql/lib/mysql /usr/lib/mysql
 			fi
 			chmod 775 /usr/local/mysql/support-files/mysql.server
-
+            ln -s /usr/local/mysql/support-files/mysql.server /etc/init.d/mysql
+			chmod +x /etc/init.d/mysql
+			/etc/init.d/mysql start
 			ln -s /usr/local/mysql/bin/mysql /usr/bin/mysql
 			ln -s /usr/local/mysql/bin/mysqladmin /usr/bin/mysqladmin
 			ln -s /usr/local/mysql/bin/mysqldump /usr/bin/mysqldump
 			ln -s /usr/local/mysql/bin/myisamchk /usr/bin/myisamchk
 			ln -s /usr/local/mysql/bin/mysqld_safe /usr/bin/mysqld_safe
-			ln
 			#input mysql password
 			InputMysqlPass
 			/usr/local/mysql/bin/mysqladmin password $MysqlPass
@@ -214,10 +213,12 @@ DROP USER ''@'%';
 FLUSH PRIVILEGES;
 EOF
 # **************************************
-		   update-rc.d mysql defaults		
+           /etc/init.d/mysql stop
+		   update-rc.d mysql defaults
+           cd /root		   
 	    fi		
 	fi
-	/etc/init.d/mysql start
+    /etc/init.d/mysql start
 	echo "---------------------------------"
 	echo "    mysql install finished       "
 	echo "---------------------------------"
@@ -248,7 +249,7 @@ function installphp(){
 			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=/usr/local/mysql --without-pear
 			make
 			make install
-			cd /root
+			
 			#cp configuration file
 			cp 	${lnmpdir}/conf/php.ini /etc/php5/php.ini
 			cp 	${lnmpdir}/conf/php-fpm.conf /usr/local/php/etc/php-fpm.conf
@@ -260,6 +261,7 @@ function installphp(){
 			ln -s /usr/local/php/sbin/php-fpm /usr/sbin/php5-fpm
 			#php auto-start		
 			update-rc.d php5-fpm defaults
+			cd /root
 		fi
 	fi
 	/etc/init.d/php5-fpm start	
