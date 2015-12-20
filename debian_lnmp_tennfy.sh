@@ -142,6 +142,7 @@ function installmysql(){
 		cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DMYSQL_DATADIR=/var/lib/mysql DMYSQL_TCP_PORT=3306 -MYSQL_UNIX_ADDR=/var/run/mysqld/mysqld.sock -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DWITH_EXTRA_CHARSETS=complex -DWITH_READLINE=1 -DENABLED_LOCAL_INFILE=1 
 		make -j
 		make install
+		cd /root
 		chmod +w /usr/local/mysql
 		chown -R mysql:mysql /usr/local/mysql
         #add configuration file
@@ -191,15 +192,11 @@ EOF
 	echo "    mysql install finished       "
     echo "---------------------------------"
 	fi
-
-	
 	#install mysql
     #apt-get install -y mysql-client mysql-server
 	# Install a low-end copy of the my.cnf to disable InnoDB
 	#/etc/init.d/mysql stop
 	#cp  ${lnmpdir}/conf/lowendbox.cnf /etc/mysql/conf.d
-	
-	
 }
 function installphp(){
     echo "---------------------------------"
