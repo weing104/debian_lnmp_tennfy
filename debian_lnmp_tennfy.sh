@@ -18,6 +18,12 @@ echo ""
 #Variables
 lnmpdir='/opt/lnmp'
 MysqlPass=''
+SysName=''
+SysBit=''
+Cpunum=''
+RamTotal=''
+RamSwap=''
+RamSum=''
 
 #Version
 MysqlVersion='mysql-5.5.47'
@@ -25,22 +31,22 @@ PhpVersion='php-5.4.45'
 NginxVersion='nginx-1.8.0'
 
 
-function check_sanity() {
-	# Do some sanity checking.
-	if [ $(/usr/bin/id -u) != "0" ]
-	then
-		die 'Must be run by root user'
-	fi
+function CheckSystem()
+{
+	[ $(id -u) != '0' ] && echo '[Error] Please use root to install AMH.' && exit
+	egrep -i "centos" /etc/issue && SysName='centos'
+	egrep -i "debian" /etc/issue && SysName='debian'
+	egrep -i "ubuntu" /etc/issue && SysName='ubuntu'
+	[ "$SysName" != 'debian'  ] && echo '[Error] Your system is not supported' && exit
 
-	if [ ! -f /etc/debian_version ]
-	then
-		die "Distribution is not supported"
-	fi
-}
-
-function die() {
-	echo "ERROR: $1" > /dev/null 1>&2
-	exit 1
+	SysBit='32' && [ `getconf WORD_BIT` == '32' ] && [ `getconf LONG_BIT` == '64' ] && SysBit='64'
+	Cpunum=`cat /proc/cpuinfo | grep 'processor' | wc -l`
+	RamTotal=`free -m | grep 'Mem' | awk '{print $2}'`
+	RamSwap=`free -m | grep 'Swap' | awk '{print $2}'`
+	echo "${SysBit}Bit, ${Cpunum}*CPU, ${RamTotal}MB*RAM, ${RamSwap}MB*Swap"
+	echo '================================================================'
+	
+	RamSum=$[$RamTotal+$RamSwap]
 }
 function InputMysqlPass()
 {
@@ -89,21 +95,25 @@ function remove_unneeded() {
 	update-rc.d xinetd disable
 	
 	apt-get update
-	for packages in build-essential gcc g++ cmake make ntp logrotate automake patch autoconf autoconf2.13 re2c wget flex cron libzip-dev libc6-dev rcconf bison cpp binutils unzip tar bzip2 libncurses5-dev libncurses5 libtool libevent-dev libpcre3 libpcre3-dev libpcrecpp0 libssl-dev zlibc openssl libsasl2-dev libxml2 libxml2-dev libltdl3-dev libltdl-dev zlib1g zlib1g-dev libbz2-1.0 libbz2-dev libglib2.0-0 libglib2.0-dev libpng3 libfreetype6 libfreetype6-dev libjpeg62 libjpeg62-dev libjpeg-dev libpng-dev libpng12-0 libpng12-dev curl libcurl3  libpq-dev libpq5 gettext libcurl4-gnutls-dev  libcurl4-openssl-dev libcap-dev ftp expect zip unzip sendmail-bin sendmail git
+	for packages in build-essential gcc g++ cmake make ntp logrotate automake patch autoconf autoconf2.13 re2c wget flex cron libzip-dev libc6-dev rcconf bison cpp binutils unzip tar bzip2 libncurses5-dev libncurses5 libtool libevent-dev libpcre3 libpcre3-dev libpcrecpp0 libssl-dev zlibc openssl libsasl2-dev libxml2 libxml2-dev libltdl3-dev libltdl-dev zlib1g zlib1g-dev libbz2-1.0 libbz2-dev libglib2.0-0 libglib2.0-dev libpng3 libfreetype6 libfreetype6-dev libjpeg62 libjpeg62-dev libjpeg-dev libpng-dev libpng12-0 libpng12-dev curl libcurl3  libpq-dev libpq5 gettext libcurl4-gnutls-dev  libcurl4-openssl-dev libcap-dev ftp expect zip unzip git
 	do
 			echo "[${packages} Installing] ************************************************** >>"
 			apt-get install -y $packages --force-yes;apt-get -fy install;apt-get -y autoremove
 	done
 }
-function install_dotdeb() {
-	echo -e 'deb http://packages.dotdeb.org stable all' >> /etc/apt/sources.list
-    echo -e 'deb-src http://packages.dotdeb.org stable all' >> /etc/apt/sources.list
+function install_dotdeb() 
+{
+    if [ "$RamSum" -lt '512' ]
+	then
+		echo -e 'deb http://packages.dotdeb.org stable all' >> /etc/apt/sources.list
+		echo -e 'deb-src http://packages.dotdeb.org stable all' >> /etc/apt/sources.list
    
-	#import GnuPG key
-	wget http://www.dotdeb.org/dotdeb.gpg
-	cat dotdeb.gpg | apt-key add -
-	rm dotdeb.gpg
-	apt-get update
+		#import GnuPG key
+		wget http://www.dotdeb.org/dotdeb.gpg
+		cat dotdeb.gpg | apt-key add -
+		rm dotdeb.gpg
+		apt-get update
+	fi
 }
 function downloadfiles(){
     #download libiconv
@@ -134,48 +144,62 @@ function installmysql(){
     echo "---------------------------------"
 	echo "    begin to install mysql       "
     echo "---------------------------------" 
-    if [ ! -f /usr/local/mysql/bin/mysql ]
+	if [ "$RamSum" -lt '512' ]
 	then
-		cd ${lnmpdir}/packages/${MysqlVersion}
-		groupadd mysql
-		useradd -s /sbin/nologin -g mysql mysql
-		cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DMYSQL_DATADIR=/var/lib/mysql DMYSQL_TCP_PORT=3306 -MYSQL_UNIX_ADDR=/var/run/mysqld/mysqld.sock -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DWITH_EXTRA_CHARSETS=complex -DWITH_READLINE=1 -DENABLED_LOCAL_INFILE=1 
-		make -j
-		make install
-		cd /root
-		chmod +w /usr/local/mysql
-		chown -R mysql:mysql /usr/local/mysql
-        #add configuration file
-		rm -f /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf
-		cp ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
-		cp ${lnmpdir}/conf/mysql /etc/init.d/mysql
-		chmod +x /etc/init.d/mysql
-		/usr/local/mysql/scripts/mysql_install_db --user=mysql --defaults-file=/etc/mysql/my.cnf --basedir=/usr --datadir=/var/lib/mysql
+	    #install mysql
+		apt-get install -y mysql-client mysql-server
+		# Install a low-end copy of the my.cnf to disable InnoDB
+		/etc/init.d/mysql stop
+		if [ -f ${lnmpdir}/conf/my.cnf ]
+			rm  ${lnmpdir}/conf/my.cnf
+			cp  ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
+		else
+			cp  ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
+		fi
+	else
+		if [ ! -f /usr/local/mysql/bin/mysql ]
+		then
+			mkdir /var/lib/mysql /var/run/mysqld /etc/mysql
+			cd ${lnmpdir}/packages/${MysqlVersion}
+			groupadd mysql
+			useradd -s /sbin/nologin -g mysql mysql
+			cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DMYSQL_DATADIR=/var/lib/mysql -DMYSQL_TCP_PORT=3306 -DMYSQL_UNIX_ADDR=/var/run/mysqld/mysqld.sock -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DWITH_EXTRA_CHARSETS=complex -DWITH_READLINE=1 -DENABLED_LOCAL_INFILE=1 
+			make
+			make install
+			cd /root
+			chmod +w /usr/local/mysql
+			chown -R mysql:mysql /usr/local/mysql
+			#add configuration file
+			rm -f /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf
+			cp ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
+			cp ${lnmpdir}/conf/mysql /etc/init.d/mysql
+			chmod +x /etc/init.d/mysql
+			/usr/local/mysql/scripts/mysql_install_db --user=mysql --defaults-file=/etc/mysql/my.cnf --basedir=/usr --datadir=/var/lib/mysql
 # EOF **********************************
 cat > /etc/ld.so.conf.d/mysql.conf<<EOF
 /usr/local/mysql/lib/mysql
 /usr/local/lib
 EOF
 # **************************************
-		ldconfig;
-		if [ "$SysBit" == '64' ] 
-		then
-			ln -s /usr/local/mysql/lib/mysql /usr/lib64/mysql
-		else
-			ln -s /usr/local/mysql/lib/mysql /usr/lib/mysql
-		fi
-		chmod 775 /usr/local/mysql/support-files/mysql.server
+			ldconfig
+			if [ "$SysBit" == '64' ] 
+			then
+				ln -s /usr/local/mysql/lib/mysql /usr/lib64/mysql
+			else
+				ln -s /usr/local/mysql/lib/mysql /usr/lib/mysql
+			fi
+			chmod 775 /usr/local/mysql/support-files/mysql.server
 
-		ln -s /usr/local/mysql/bin/mysql /usr/bin/mysql
-		ln -s /usr/local/mysql/bin/mysqladmin /usr/bin/mysqladmin
-		ln -s /usr/local/mysql/bin/mysqldump /usr/bin/mysqldump
-		ln -s /usr/local/mysql/bin/myisamchk /usr/bin/myisamchk
-		ln -s /usr/local/mysql/bin/mysqld_safe /usr/bin/mysqld_safe
-		
-        #input mysql password
-		InputMysqlPass
-		/usr/local/mysql/bin/mysqladmin password $MysqlPass
-		rm -rf /var/lib/mysql/test
+			ln -s /usr/local/mysql/bin/mysql /usr/bin/mysql
+			ln -s /usr/local/mysql/bin/mysqladmin /usr/bin/mysqladmin
+			ln -s /usr/local/mysql/bin/mysqldump /usr/bin/mysqldump
+			ln -s /usr/local/mysql/bin/myisamchk /usr/bin/myisamchk
+			ln -s /usr/local/mysql/bin/mysqld_safe /usr/bin/mysqld_safe
+			ln
+			#input mysql password
+			InputMysqlPass
+			/usr/local/mysql/bin/mysqladmin password $MysqlPass
+			rm -rf /var/lib/mysql/test
 
 # EOF **********************************
 mysql -hlocalhost -uroot -p$MysqlPass <<EOF
@@ -186,54 +210,58 @@ DROP USER ''@'%';
 FLUSH PRIVILEGES;
 EOF
 # **************************************
-	update-rc.d php5-fpm defaults
+		   update-rc.d mysql defaults		
+	    fi		
+	fi
 	/etc/init.d/mysql start
 	echo "---------------------------------"
 	echo "    mysql install finished       "
-    echo "---------------------------------"
-	fi
-	#install mysql
-    #apt-get install -y mysql-client mysql-server
-	# Install a low-end copy of the my.cnf to disable InnoDB
-	#/etc/init.d/mysql stop
-	#cp  ${lnmpdir}/conf/lowendbox.cnf /etc/mysql/conf.d
+	echo "---------------------------------"
 }
 function installphp(){
     echo "---------------------------------"
 	echo "    begin to install php         "
-    echo "---------------------------------"    
-	#install PHP
-	if [ ! -d /usr/local/php ]
-	then
-	    mkdir /etc/php5
-		cd ${lnmpdir}/packages/${PhpVersion}
-		groupadd www-data
-		useradd -m -s /sbin/nologin -g www-data www-data
-	    ./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=/usr/local/mysql --without-pear
-		make -j
-		make install
-		cd /root
-		#cp configuration file
+    echo "---------------------------------"  
+    if [ "$RamSum" -lt '512' ]
+	then	
+		apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
+		/etc/init.d/php5-fpm stop
+		
+	    rm /etc/php5/fpm/php.ini
+		rm /etc/php5/fpm/php-fpm.conf
 		cp 	${lnmpdir}/conf/php.ini /etc/php5/fpm/php.ini
-		cp 	${lnmpdir}/conf/php-fpm.conf /usr/local/php/etc/php-fpm.conf
-		cp 	${lnmpdir}/conf/php5-fpm /etc/init.d/php5-fpm
-		chmod +x /etc/init.d/php5-fpm
+		cp 	${lnmpdir}/conf/php-fpm.conf /etc/php5/fpm/php-fpm.conf		
+	else
+	    #install Libiconv
+		InstallLibiconv
+		#install PHP
+		if [ ! -d /usr/local/php ]
+		then
+			mkdir /etc/php5
+			cd ${lnmpdir}/packages/${PhpVersion}
+			groupadd www-data
+			useradd -m -s /sbin/nologin -g www-data www-data
+			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=/usr/local/mysql --without-pear
+			make
+			make install
+			cd /root
+			#cp configuration file
+			cp 	${lnmpdir}/conf/php.ini /etc/php5/php.ini
+			cp 	${lnmpdir}/conf/php-fpm.conf /usr/local/php/etc/php-fpm.conf
+			cp 	${lnmpdir}/conf/php5-fpm /etc/init.d/php5-fpm
+			chmod +x /etc/init.d/php5-fpm
         
-		ln -s /usr/local/php/bin/php /usr/bin/php
-		ln -s /usr/local/php/bin/phpize /usr/bin/phpize
-		ln -s /usr/local/php/sbin/php-fpm /usr/sbin/php5-fpm
-		#php auto-start		
-		update-rc.d php5-fpm defaults
-		
-		/etc/init.d/php5-fpm start
-		
-		echo "---------------------------------"
-	    echo "    php install finished         "
-        echo "---------------------------------"
-		
+			ln -s /usr/local/php/bin/php /usr/bin/php
+			ln -s /usr/local/php/bin/phpize /usr/bin/phpize
+			ln -s /usr/local/php/sbin/php-fpm /usr/sbin/php5-fpm
+			#php auto-start		
+			update-rc.d php5-fpm defaults
+		fi
 	fi
-	#apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
-	#restart php
+	/etc/init.d/php5-fpm start	
+	echo "---------------------------------"
+	echo "    php install finished         "
+    echo "---------------------------------"	
 }
 function installnginx(){
     echo "---------------------------------"
@@ -297,7 +325,6 @@ function init(){
 	Timezone
 	CloseSelinux
 	downloadfiles
-	InstallLibiconv
 	echo "---------------------------------" &&
 	echo "     init successfully!          " &&
 	echo "---------------------------------"
@@ -414,7 +441,7 @@ function addgoogle(){
 }
 
 ######################### Initialization ################################################
-check_sanity
+CheckSystem
 action=$1
 [ -z $1 ] && action=install
 case "$action" in
