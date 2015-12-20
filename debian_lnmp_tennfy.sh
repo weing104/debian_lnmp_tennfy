@@ -33,7 +33,7 @@ NginxVersion='nginx-1.8.0'
 
 function CheckSystem()
 {
-	[ $(id -u) != '0' ] && echo '[Error] Please use root to install AMH.' && exit
+	[ $(id -u) != '0' ] && echo '[Error] Please use root to install lnmp' && exit
 	egrep -i "centos" /etc/issue && SysName='centos'
 	egrep -i "debian" /etc/issue && SysName='debian'
 	egrep -i "ubuntu" /etc/issue && SysName='ubuntu'
@@ -43,10 +43,10 @@ function CheckSystem()
 	Cpunum=`cat /proc/cpuinfo | grep 'processor' | wc -l`
 	RamTotal=`free -m | grep 'Mem' | awk '{print $2}'`
 	RamSwap=`free -m | grep 'Swap' | awk '{print $2}'`
-	echo "${SysBit}Bit, ${Cpunum}*CPU, ${RamTotal}MB*RAM, ${RamSwap}MB*Swap"
-	echo '================================================================'
-	
 	RamSum=$[$RamTotal+$RamSwap]
+	echo '================================================================'
+	echo "${SysBit}Bit, ${Cpunum}*CPU, ${RamTotal}MB*RAM, ${RamSwap}MB*Swap"
+	echo '================================================================'	
 }
 function InputMysqlPass()
 {
@@ -151,6 +151,7 @@ function installmysql(){
 		# Install a low-end copy of the my.cnf to disable InnoDB
 		/etc/init.d/mysql stop
 		if [ -f ${lnmpdir}/conf/my.cnf ]
+		then
 			rm  ${lnmpdir}/conf/my.cnf
 			cp  ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
 		else
