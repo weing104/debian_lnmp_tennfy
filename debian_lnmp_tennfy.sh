@@ -87,7 +87,8 @@ function InstallLibiconv()
 		cd /root
 	fi
 }
-function remove_unneeded() {
+function remove_unneeded() 
+{
 	DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge apache2* samba* bind9* nscd
 	invoke-rc.d saslauthd stop
 	invoke-rc.d xinetd stop
@@ -115,7 +116,8 @@ function install_dotdeb()
 		apt-get update
 	fi
 }
-function downloadfiles(){
+function downloadfiles()
+{
     #download libiconv
 	wget http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz
 	tar -zxvf libiconv-1.14.tar.gz -C ${lnmpdir}/packages	
@@ -140,7 +142,8 @@ function downloadfiles(){
 	cp -r ngx_http_google_filter_module ${lnmpdir}/packages/${NginxVersion}
 	cp -r ngx_http_substitutions_filter_module ${lnmpdir}/packages/${NginxVersion}
 }
-function installmysql(){
+function installmysql()
+{
     echo "---------------------------------"
 	echo "    begin to install mysql       "
     echo "---------------------------------" 
