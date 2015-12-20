@@ -17,10 +17,11 @@ echo ""
 
 #Variables
 lnmpdir='/opt/lnmp'
+MysqlPass=''
 
 #Version
-MysqlVersion='mysql-5.5.34'
-PhpVersion='php-5.6.16'
+MysqlVersion='mysql-5.5.47'
+PhpVersion='php-5.4.45'
 NginxVersion='nginx-1.8.0'
 
 
@@ -41,6 +42,18 @@ function die() {
 	echo "ERROR: $1" > /dev/null 1>&2
 	exit 1
 }
+function InputMysqlPass()
+{
+	read -p '[Notice] Please input MySQL password:' MysqlPass
+	if [ "$MysqlPass" == '' ]
+	then
+		echo '[Error] MySQL password is empty.'
+		InputMysqlPass
+	else
+		echo '[OK] Your MySQL password is:'
+		echo $MysqlPass
+	fi
+}
 function Timezone()
 {
 	rm -rf /etc/localtime
@@ -55,17 +68,17 @@ function Timezone()
 }
 function CloseSelinux()
 {
-	[ -s /etc/selinux/config ] && sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config;
+	[ -s /etc/selinux/config ] && sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
 }
 function InstallLibiconv()
 {
-	if [ ! -d /usr/sbin/libiconv ]; then
+	if [ ! -d /usr/local/libiconv ]
+	then
 		cd ${lnmpdir}/packages/libiconv-1.14
-		./configure --prefix=/usr//libiconv
-		make && make install
-		echo "[OK] ${LibiconvVersion} install completed.";
-	else
-		echo '[OK] libiconv is installed!';
+		./configure --prefix=/usr/local/libiconv
+		make
+		make install
+		cd /root
 	fi
 }
 function remove_unneeded() {
@@ -99,6 +112,9 @@ function downloadfiles(){
 	#download nginx
 	wget http://nginx.org/download/${NginxVersion}.tar.gz
 	tar -zxvf ${NginxVersion}.tar.gz -C ${lnmpdir}/packages
+	#download mysql
+	wget http://cdn.mysql.com//Downloads/MySQL-5.5/${MysqlVersion}.tar.gz
+	tar -zxvf ${MysqlVersion}.tar.gz -C ${lnmpdir}/packages
 	#download php
 	wget http://php.net/distributions/${PhpVersion}.tar.gz
 	tar -zxvf ${PhpVersion}.tar.gz -C ${lnmpdir}/packages
@@ -117,38 +133,110 @@ function downloadfiles(){
 function installmysql(){
     echo "---------------------------------"
 	echo "    begin to install mysql       "
-    echo "---------------------------------"   
-	#install mysql
-    apt-get install -y mysql-client mysql-server
-	# Install a low-end copy of the my.cnf to disable InnoDB
-	/etc/init.d/mysql stop
-	cp  ${lnmpdir}/conf/lowendbox.cnf /etc/mysql/conf.d
+    echo "---------------------------------" 
+    if [ ! -f /usr/local/mysql/bin/mysql ]
+	then
+		cd ${lnmpdir}/packages/${MysqlVersion}
+		groupadd mysql
+		useradd -s /sbin/nologin -g mysql mysql
+		cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DMYSQL_DATADIR=/var/lib/mysql DMYSQL_TCP_PORT=3306 -MYSQL_UNIX_ADDR=/var/run/mysqld/mysqld.sock -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DWITH_EXTRA_CHARSETS=complex -DWITH_READLINE=1 -DENABLED_LOCAL_INFILE=1 
+		make -j
+		make install
+		chmod +w /usr/local/mysql
+		chown -R mysql:mysql /usr/local/mysql
+        #add configuration file
+		rm -f /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf
+		cp ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
+		cp ${lnmpdir}/conf/mysql /etc/init.d/mysql
+		chmod +x /etc/init.d/mysql
+		/usr/local/mysql/scripts/mysql_install_db --user=mysql --defaults-file=/etc/mysql/my.cnf --basedir=/usr --datadir=/var/lib/mysql
+# EOF **********************************
+cat > /etc/ld.so.conf.d/mysql.conf<<EOF
+/usr/local/mysql/lib/mysql
+/usr/local/lib
+EOF
+# **************************************
+		ldconfig;
+		if [ "$SysBit" == '64' ] 
+		then
+			ln -s /usr/local/mysql/lib/mysql /usr/lib64/mysql
+		else
+			ln -s /usr/local/mysql/lib/mysql /usr/lib/mysql
+		fi
+		chmod 775 /usr/local/mysql/support-files/mysql.server
+
+		ln -s /usr/local/mysql/bin/mysql /usr/bin/mysql
+		ln -s /usr/local/mysql/bin/mysqladmin /usr/bin/mysqladmin
+		ln -s /usr/local/mysql/bin/mysqldump /usr/bin/mysqldump
+		ln -s /usr/local/mysql/bin/myisamchk /usr/bin/myisamchk
+		ln -s /usr/local/mysql/bin/mysqld_safe /usr/bin/mysqld_safe
+		
+        #input mysql password
+		InputMysqlPass
+		/usr/local/mysql/bin/mysqladmin password $MysqlPass
+		rm -rf /var/lib/mysql/test
+
+# EOF **********************************
+mysql -hlocalhost -uroot -p$MysqlPass <<EOF
+USE mysql;
+DELETE FROM user WHERE User!='root' OR (User = 'root' AND Host != 'localhost');
+UPDATE user set password=password('$MysqlPass') WHERE User='root';
+DROP USER ''@'%';
+FLUSH PRIVILEGES;
+EOF
+# **************************************
+	update-rc.d php5-fpm defaults
 	/etc/init.d/mysql start
 	echo "---------------------------------"
 	echo "    mysql install finished       "
     echo "---------------------------------"
+	fi
+
+	
+	#install mysql
+    #apt-get install -y mysql-client mysql-server
+	# Install a low-end copy of the my.cnf to disable InnoDB
+	#/etc/init.d/mysql stop
+	#cp  ${lnmpdir}/conf/lowendbox.cnf /etc/mysql/conf.d
+	
+	
 }
 function installphp(){
     echo "---------------------------------"
 	echo "    begin to install php         "
     echo "---------------------------------"    
 	#install PHP
-	apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
-	#edit php
-	/etc/init.d/php5-fpm stop
-	sed -i  s/'listen = 127.0.0.1:9000'/'listen = \/var\/run\/php5-fpm.sock'/ /etc/php5/fpm/pool.d/www.conf
-	sed -i  s/'^pm.max_children = [0-9]*'/'pm.max_children = 2'/ /etc/php5/fpm/pool.d/www.conf
-	sed -i  s/'^pm.start_servers = [0-9]*'/'pm.start_servers = 1'/ /etc/php5/fpm/pool.d/www.conf
-	sed -i  s/'^pm.min_spare_servers = [0-9]*'/'pm.min_spare_servers = 1'/ /etc/php5/fpm/pool.d/www.conf
-	sed -i  s/'^pm.max_spare_servers = [0-9]*'/'pm.max_spare_servers = 2'/ /etc/php5/fpm/pool.d/www.conf
-	sed -i  s/'memory_limit = 128M'/'memory_limit = 64M'/ /etc/php5/fpm/php.ini
-	sed -i  s/'short_open_tag = Off'/'short_open_tag = On'/ /etc/php5/fpm/php.ini
-	sed -i  s/'upload_max_filesize = 2M'/'upload_max_filesize = 8M'/ /etc/php5/fpm/php.ini
+	if [ ! -d /usr/local/php ]
+	then
+	    mkdir /etc/php5
+		cd ${lnmpdir}/packages/${PhpVersion}
+		groupadd www-data
+		useradd -m -s /sbin/nologin -g www-data www-data
+	    ./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=/usr/local/mysql --without-pear
+		make -j
+		make install
+		cd /root
+		#cp configuration file
+		cp 	${lnmpdir}/conf/php.ini /etc/php5/fpm/php.ini
+		cp 	${lnmpdir}/conf/php-fpm.conf /usr/local/php/etc/php-fpm.conf
+		cp 	${lnmpdir}/conf/php5-fpm /etc/init.d/php5-fpm
+		chmod +x /etc/init.d/php5-fpm
+        
+		ln -s /usr/local/php/bin/php /usr/bin/php
+		ln -s /usr/local/php/bin/phpize /usr/bin/phpize
+		ln -s /usr/local/php/sbin/php-fpm /usr/sbin/php5-fpm
+		#php auto-start		
+		update-rc.d php5-fpm defaults
+		
+		/etc/init.d/php5-fpm start
+		
+		echo "---------------------------------"
+	    echo "    php install finished         "
+        echo "---------------------------------"
+		
+	fi
+	#apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
 	#restart php
-	/etc/init.d/php5-fpm start
-	echo "---------------------------------"
-	echo "    php install finished         "
-    echo "---------------------------------"
 }
 function installnginx(){
     echo "---------------------------------"
@@ -162,7 +250,6 @@ function installnginx(){
 		make
 		make install
 		cd /root
-	fi	
 	# add conf.d dir
 	if [ ! -d /etc/nginx/conf.d ]
 	then
@@ -176,8 +263,8 @@ function installnginx(){
 	if [ -f /etc/nginx/nginx.conf ]
 	then
 	    rm /etc/nginx/nginx.conf	
-        cp 	${lnmpdir}/conf/nginx.conf /etc/nginx
-        cp 	${lnmpdir}/conf/nginx /etc/init.d
+        cp 	${lnmpdir}/conf/nginx.conf /etc/nginx/nginx.conf
+        cp 	${lnmpdir}/conf/nginx /etc/init.d/nginx
 		chmod +x /etc/nginx/nginx.conf
 		chmod +x /etc/init.d/nginx
 	fi	
@@ -187,13 +274,15 @@ function installnginx(){
 	#set nginx auto-start
 	update-rc.d nginx defaults
 	#add rewrite rule
-	cp 	${lnmpdir}/conf/wordpress.conf /etc/nginx
-	cp 	${lnmpdir}/conf/discuz.conf /etc/nginx
+	cp 	${lnmpdir}/conf/wordpress.conf /etc/nginx/wordpress.conf
+	cp 	${lnmpdir}/conf/discuz.conf /etc/nginx/discuz.conf
 
 	/etc/init.d/nginx start
+		
 	echo "---------------------------------"
 	echo "    nginx install finished       "
     echo "---------------------------------"
+	fi
 }
 function init(){
     echo "---------------------------------"
@@ -211,6 +300,7 @@ function init(){
 	Timezone
 	CloseSelinux
 	downloadfiles
+	InstallLibiconv
 	echo "---------------------------------" &&
 	echo "     init successfully!          " &&
 	echo "---------------------------------"
