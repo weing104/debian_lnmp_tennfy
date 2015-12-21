@@ -357,6 +357,7 @@ function init(){
 		mkdir ${lnmpdir}/packages
 		mkdir ${lnmpdir}/conf
 	fi
+	CheckSystem
 	remove_unneeded
 	install_dotdeb
 	Timezone
@@ -480,7 +481,6 @@ function addgoogle(){
 }
 
 ######################### Initialization ################################################
-CheckSystem
 action=$1
 [ -z $1 ] && action=install
 case "$action" in
