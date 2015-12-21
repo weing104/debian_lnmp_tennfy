@@ -89,6 +89,17 @@ function InstallLibiconv()
 		cd /root
 	fi
 }
+function Installcurl()
+{
+	if [ ! -d /usr/local/curl ]
+	then
+		cd ${lnmpdir}/packages/curl-7.46.0
+		./configure --prefix=/usr/local/curl
+		make
+		make install
+		cd /root
+	fi
+}
 function remove_unneeded() 
 {
 	DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge apache2* samba* bind9* nscd
@@ -98,7 +109,7 @@ function remove_unneeded()
 	update-rc.d xinetd disable
 	
 	apt-get update
-	for packages in build-essential gcc g++ cmake make ntp logrotate automake patch autoconf autoconf2.13 re2c wget flex cron libzip-dev libc6-dev rcconf bison cpp binutils unzip tar bzip2 libncurses5-dev libncurses5 libtool libevent-dev libpcre3 libpcre3-dev libpcrecpp0 libssl-dev zlibc openssl libsasl2-dev libxml2 libxml2-dev libltdl3-dev libltdl-dev zlib1g zlib1g-dev libbz2-1.0 libbz2-dev libglib2.0-0 libglib2.0-dev libpng3 libfreetype6 libfreetype6-dev libjpeg62 libjpeg62-dev libjpeg-dev libpng-dev libpng12-0 libpng12-dev curl libcurl3  libpq-dev libpq5 gettext libcurl4-gnutls-dev  libcurl4-openssl-dev libcap-dev ftp expect zip unzip git
+	for packages in build-essential gcc g++ cmake make ntp logrotate automake patch autoconf autoconf2.13 re2c wget flex cron libzip-dev libc6-dev rcconf bison cpp binutils tar bzip2 libncurses5-dev libncurses5 libtool libevent-dev libpcre3 libpcre3-dev libpcrecpp0 libssl-dev zlibc openssl libsasl2-dev libxml2 libxml2-dev libltdl3-dev libltdl-dev zlib1g zlib1g-dev libbz2-1.0 libbz2-dev libglib2.0-0 libglib2.0-dev libpng3 libfreetype6 libfreetype6-dev libjpeg62 libjpeg62-dev libjpeg-dev libpng-dev libpng12-0 libpng12-dev libpq-dev libpq5 gettext libcap-dev ftp expect zip unzip git
 	do
 			echo "[${packages} Installing] ************************************************** >>"
 			apt-get install -y $packages --force-yes;apt-get -fy install;apt-get -y autoremove
@@ -123,6 +134,9 @@ function downloadfiles()
     #download libiconv
 	wget http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz
 	tar -zxvf libiconv-1.14.tar.gz -C ${lnmpdir}/packages	
+	#download curl
+	wget http://curl.haxx.se/download/curl-7.46.0.tar.gz
+	tar -zxvf curl-7.46.0.tar.gz -C ${lnmpdir}/packages
 	#download nginx
 	wget http://nginx.org/download/${NginxVersion}.tar.gz
 	tar -zxvf ${NginxVersion}.tar.gz -C ${lnmpdir}/packages
@@ -143,6 +157,9 @@ function downloadfiles()
     git clone https://github.com/yaoweibin/ngx_http_substitutions_filter_module
 	cp -r ngx_http_google_filter_module ${lnmpdir}/packages/${NginxVersion}
 	cp -r ngx_http_substitutions_filter_module ${lnmpdir}/packages/${NginxVersion}
+	
+	#delete all tar.gz packages
+	rm *.tar.gz
 }
 function installmysql()
 {
@@ -240,6 +257,8 @@ function installphp(){
 		cp 	${lnmpdir}/conf/php.ini /etc/php5/fpm/php.ini
 		cp 	${lnmpdir}/conf/php-fpm.conf /etc/php5/fpm/php-fpm.conf		
 	else
+	    #install curl
+		Installcurl
 	    #install Libiconv
 		InstallLibiconv
 		#install PHP
@@ -249,13 +268,13 @@ function installphp(){
 			cd ${lnmpdir}/packages/${PhpVersion}
 			groupadd www-data
 			useradd -m -s /sbin/nologin -g www-data www-data
-			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=/usr/local/mysql --without-pear
+			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=/usr/local/mysql --without-pear
 			make
 			make install
 			
 			#cp configuration file
 			cp 	${lnmpdir}/conf/php.ini /etc/php5/php.ini
-			cp 	${lnmpdir}/conf/php-fpm.conf /usr/local/php/etc/php-fpm.conf
+			cp 	${lnmpdir}/conf/php-fpm.conf /etc/php5/php-fpm.conf
 			cp 	${lnmpdir}/conf/php5-fpm /etc/init.d/php5-fpm
 			chmod +x /etc/init.d/php5-fpm
         
