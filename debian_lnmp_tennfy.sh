@@ -49,10 +49,19 @@ function CheckSystem()
 	echo '================================================================'
 	echo "${SysBit}Bit, ${Cpunum}*CPU, ${RamTotal}MB*RAM, ${RamSwap}MB*Swap"
 	echo '================================================================'	
+	if [ "$RamSum" -lt '512' ]
+	then
+	    echo 'Script will install mysql and php by apt-get'
+	else
+	    echo 'Script will install mysql and php by compile'
+	    #input mysql password
+		InputMysqlPass
+	fi
 }
 function InputMysqlPass()
 {
-	read -p '[Notice] Please input MySQL password:' MysqlPass
+	echo "Please input MySQL password:"
+	read  MysqlPass
 	if [ "$MysqlPass" == '' ]
 	then
 		echo '[Error] MySQL password is empty.'
@@ -219,8 +228,7 @@ EOF
 			ln -s /usr/local/mysql/bin/mysqldump /usr/bin/mysqldump
 			ln -s /usr/local/mysql/bin/myisamchk /usr/bin/myisamchk
 			ln -s /usr/local/mysql/bin/mysqld_safe /usr/bin/mysqld_safe
-			#input mysql password
-			InputMysqlPass
+			
 			/usr/local/mysql/bin/mysqladmin password $MysqlPass
 			rm -rf /var/lib/mysql/test
 
