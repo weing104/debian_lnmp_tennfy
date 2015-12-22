@@ -109,6 +109,43 @@ function Installcurl()
 		cd /root
 	fi
 }
+function Installlibmcrypt()
+{
+	if [ ! -d /usr/local/libmcrypt ]
+	then
+		cd ${lnmpdir}/packages/libmcrypt-2.5.8
+		./configure --prefix=/usr/local/libmcrypt
+		make
+		make install
+		cd /root
+	fi
+}
+function Installmhash()
+{
+	if [ ! -d /usr/local/mhash ]
+	then
+		cd ${lnmpdir}/packages/mhash-0.9.9.9
+		./configure --prefix=/usr/local/mhash
+		make
+		make install
+		cd /root
+	fi
+}
+function Installmcrypt()
+{
+	if [ ! -d /usr/local/mcrypt ]
+	then
+		cd ${lnmpdir}/packages/mcrypt-2.6.8
+		#ln -s /usr/local/libmcrypt/bin/libmcrypt-config   /usr/bin/libmcrypt-config  #添加软连接
+        export LD_LIBRARY_PATH=/usr/local/mhash/lib:$LD_LIBRARY_PATH
+		export LDFLAGS="-L/usr/local/mhash/lib/ -I/usr/local/mhash/include/"
+		export CFLAGS="-I/usr/local/mhash/include/"
+		./configure --prefix=/usr/local/mcrypt --with-libmcrypt-prefix=/usr/local/libmcrypt
+		make
+		make install
+		cd /root
+	fi
+}
 function remove_unneeded() 
 {
 	DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge apache2* samba* bind9* nscd
@@ -143,6 +180,15 @@ function downloadfiles()
     #download libiconv
 	wget http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz
 	tar -zxvf libiconv-1.14.tar.gz -C ${lnmpdir}/packages	
+	#download Libmcrypt
+	wget http://downloads.sourceforge.net/project/mcrypt/Libmcrypt/2.5.8/libmcrypt-2.5.8.tar.gz
+	tar -zxvf libmcrypt-2.5.8.tar.gz -C ${lnmpdir}/packages
+	#download mhash
+	wget http://downloads.sourceforge.net/project/mhash/mhash/0.9.9.9/mhash-0.9.9.9.tar.gz
+	tar -zxvf mhash-0.9.9.9.tar.gz -C ${lnmpdir}/packages
+	#download mcrypt
+	wget http://downloads.sourceforge.net/project/mcrypt/MCrypt/2.6.8/mcrypt-2.6.8.tar.gz
+	tar -zxvf mcrypt-2.6.8.tar.gz -C ${lnmpdir}/packages
 	#download curl
 	wget http://curl.haxx.se/download/curl-7.46.0.tar.gz
 	tar -zxvf curl-7.46.0.tar.gz -C ${lnmpdir}/packages
@@ -169,6 +215,8 @@ function downloadfiles()
 	
 	#delete all tar.gz packages
 	rm *.tar.gz
+	rm -r ngx_http_google_filter_module
+	rm -r ngx_http_substitutions_filter_module
 }
 function installmysql()
 {
@@ -267,6 +315,10 @@ function installphp(){
 	else
 	    #install curl
 		Installcurl
+		#install mcrypt
+		Installlibmcrypt
+		Installmhash
+		Installmcrypt
 	    #install Libiconv
 		InstallLibiconv
 		#install PHP
@@ -276,7 +328,7 @@ function installphp(){
 			cd ${lnmpdir}/packages/${PhpVersion}
 			groupadd www-data
 			useradd -m -s /sbin/nologin -g www-data www-data
-			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=/usr/local/mysql --without-pear
+			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=/usr/local/mysql --with-mysqli=/usr/local/mysql --without-pear --disable-fileinfo --with-mcrypt=/usr/local/mcrypt
 			make
 			make install
 			
