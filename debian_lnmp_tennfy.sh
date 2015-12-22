@@ -136,11 +136,11 @@ function Installmcrypt()
 	if [ ! -d /usr/local/mcrypt ]
 	then
 		cd ${lnmpdir}/packages/mcrypt-2.6.8
-		#ln -s /usr/local/libmcrypt/bin/libmcrypt-config   /usr/bin/libmcrypt-config  #添加软连接
-        export LD_LIBRARY_PATH=/usr/local/mhash/lib:$LD_LIBRARY_PATH
+		ln -s /usr/local/libmcrypt/bin/libmcrypt-config   /usr/bin/libmcrypt-config  #添加软连接
+        export LD_LIBRARY_PATH=/usr/local/mhash/lib:/usr/local/libmcrypt/lib
 		export LDFLAGS="-L/usr/local/mhash/lib/ -I/usr/local/mhash/include/"
 		export CFLAGS="-I/usr/local/mhash/include/"
-		./configure --prefix=/usr/local/mcrypt --with-libmcrypt-prefix=/usr/local/libmcrypt
+		./configure --prefix=/usr/local/mcrypt
 		make
 		make install
 		cd /root
