@@ -276,6 +276,7 @@ EOF
 			ln -s /usr/local/mysql/bin/mysqldump /usr/bin/mysqldump
 			ln -s /usr/local/mysql/bin/myisamchk /usr/bin/myisamchk
 			ln -s /usr/local/mysql/bin/mysqld_safe /usr/bin/mysqld_safe
+			ln -s /usr/local/mysql/bin/mysql_config /usr/bin/mysql_config
 			
 			/usr/local/mysql/bin/mysqladmin password $MysqlPass
 			rm -rf /var/lib/mysql/test
@@ -328,7 +329,7 @@ function installphp(){
 			cd ${lnmpdir}/packages/${PhpVersion}
 			groupadd www-data
 			useradd -m -s /sbin/nologin -g www-data www-data
-			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=/usr/local/mysql --with-mysqli=/usr/local/mysql --without-pear --disable-fileinfo --with-mcrypt=/usr/local/libmcrypt
+			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=/usr/local/mysql --with-mysqli=/usr/bin/mysql_config --without-pear --disable-fileinfo --with-mcrypt=/usr/local/libmcrypt
 			make
 			make install
 			
