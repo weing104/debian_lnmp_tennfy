@@ -46,12 +46,13 @@ function CheckSystem()
 	RamTotal=`free -m | grep 'Mem' | awk '{print $2}'`
 	RamSwap=`free -m | grep 'Swap' | awk '{print $2}'`
 	RamSum=$[$RamTotal+$RamSwap]
-	echo '================================================================'
+	echo '------------------------------------------------------------------'
 	echo "${SysBit}Bit, ${Cpunum}*CPU, ${RamTotal}MB*RAM, ${RamSwap}MB*Swap"
-	echo '================================================================'	
+	echo '------------------------------------------------------------------'	
 	if [ "$RamSum" -lt '512' ]
 	then
 	    echo 'Script will install mysql and php by apt-get'
+		
 	else
 	    echo 'Script will install mysql and php by compile'
 	    #input mysql password
@@ -60,7 +61,9 @@ function CheckSystem()
 }
 function InputMysqlPass()
 {
-	echo "Please input MySQL password:"
+    echo '----------------------------------------'
+	echo '      Please input MySQL password:      '
+	echo '----------------------------------------'
 	read  MysqlPass
 	if [ "$MysqlPass" == '' ]
 	then
@@ -550,6 +553,6 @@ addgoogle)
     ;;
 *)
     echo "Arguments error! [${action} ]"
-    echo "Usage: `basename $0` {init|install|addvhost|repaire}"
+    echo "Usage: `basename $0` {install|addvhost|addsslvhost|addgoogle}"
     ;;
 esac
