@@ -5,6 +5,7 @@
 #   Author: tennfy <admin@tennfy.com>
 #   Intro:  http://www.tennfy.com
 #===============================================================================================
+export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 clear
 echo "#############################################################"
 echo "# Install lnmp for Debian or Ubuntu (32bit/64bit)"
@@ -26,6 +27,12 @@ RamSwap=''
 RamSum=''
 StartDate=''
 StartDateSecond=''
+#color
+CEND="\033[0m"
+CMSG="\033[1;36m"
+CFAILURE="\033[1;31m"
+CSUCCESS="\033[32m"
+CWARNING="\033[1;33m"
 
 #Version
 MysqlVersion='mysql-5.5.47'
@@ -234,7 +241,7 @@ function installmysql()
 		/etc/init.d/mysql stop
 		if [ -f ${lnmpdir}/conf/my.cnf ]
 		then
-			rm  ${lnmpdir}/conf/my.cnf
+			rm  /etc/mysql/my.cnf
 			cp  ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
 		else
 			cp  ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
@@ -400,55 +407,10 @@ function installnginx(){
     echo "---------------------------------"
 	fi
 }
-function init(){
-    echo "---------------------------------"
-	echo "    begin to init system         "
-    echo "---------------------------------"
-	cd /root
-    # create packages and conf directory
-	if [ ! -d ${lnmpdir} ]
-	then 
-	    mkdir ${lnmpdir}
-		mkdir ${lnmpdir}/packages
-		mkdir ${lnmpdir}/conf
-	fi
-	CheckSystem
-	remove_unneeded
-	install_dotdeb
-	Timezone
-	CloseSelinux
-	downloadfiles
-	echo "---------------------------------" &&
-	echo "     init successfully!          " &&
-	echo "---------------------------------"
-}
-function installlnmp(){
-    #init system
-	init
-	#install mysql, php, nginx
-	installmysql
-	installphp
-	installnginx	
-	#set web dir
-	cp -r ${lnmpdir}/packages/phpMyAdmin /var/www 
-	#restart lnmp
-	echo "---------------------------------" &&
-	echo "         restart lnmp!           " &&
-	echo "---------------------------------"	
-	/etc/init.d/nginx restart
-	/etc/init.d/php5-fpm restart
-	/etc/init.d/mysql restart
-	echo "---------------------------------" &&
-	echo "      install successfully!      " &&
-	echo "---------------------------------"
-	echo "Start time: ${StartDate}";
-	echo "Completion time: $(date) (Use: $[($(date +%s)-StartDateSecond)/60] minute)";
-}
-
-function addvirtualhost(){
-    echo "---------------------------------"
-	echo "    begin to add vhost           "
-    echo "---------------------------------"
+function virtualhost(){
+    echo "----------------------------------------------------------"
+	echo "           begin to install virtual host                  "
+    echo "----------------------------------------------------------"
 	echo "please input hostname(like tennfy.com):"
 	read hostname
 	echo "please input url rewrite rule name(wordpress or discuz):"
@@ -460,7 +422,7 @@ function addvirtualhost(){
 	mv /etc/nginx/conf.d/host.conf /etc/nginx/conf.d/${hostname}.conf
 	sed -i 's/tennfy.com/'${hostname}'/g' /etc/nginx/conf.d/${hostname}.conf
 	sed -i 's/rewrite/'${rewriterule}'/g' /etc/nginx/conf.d/${hostname}.conf	
-	#new a virtualhost dir
+	#make a virtualhost dir
 	mkdir /var/www/${hostname}
 	cd /var/www/${hostname}
 	chmod -R 777 /var/www
@@ -471,14 +433,14 @@ function addvirtualhost(){
 EOF
 
 	/etc/init.d/nginx start
-	echo "-------------------------------" &&
-	echo "   add vhost successfully!     " &&
-	echo "-------------------------------"
+	echo "------------------------------------------------------------" &&
+	echo "   ${CSUCCESS}install virtual host successfully!${CEND}     " &&
+	echo "------------------------------------------------------------"
 }
-function addsslvirtualhost(){
-    echo "---------------------------------"
-	echo "    begin to add ssl vhost       "
-    echo "---------------------------------"
+function sslvirtualhost(){
+    echo "------------------------------------------------------------"
+	echo "           begin to install ssl virtual host                "
+    echo "------------------------------------------------------------"
 	echo "please input hostname(like tennfy.com):"
 	read hostname
 	echo "please input url rewrite rule name(wordpress or discuz):"
@@ -507,14 +469,14 @@ function addsslvirtualhost(){
 EOF
 
 	/etc/init.d/nginx start
-	echo "-------------------------------" &&
-	echo "   add ssl vhost successfully! " &&
-	echo "-------------------------------"
+	echo "--------------------------------------------------------------" &&
+	echo "   ${CSUCCESS}install ssl virtual host successfully!${CEND}   " &&
+	echo "--------------------------------------------------------------"
 }
-function addgoogle(){
-	echo "---------------------------------"
-	echo "    begin to add google          "
-    echo "---------------------------------"
+function googlereverse(){
+	echo "--------------------------------------------------------------"
+	echo "            begin to install google reverse proxy             "
+    echo "--------------------------------------------------------------"
 	echo "please input hostname(like tennfy.com):"
 	read hostname
 	echo "please input ssl certificate file path:"
@@ -530,9 +492,101 @@ function addgoogle(){
 	sed -i 's#tennfy_certificate#'${certificate}'#g' /etc/nginx/conf.d/${hostname}.conf	
 	sed -i 's#tennfy_privatekey#'${privatekey}'#g' /etc/nginx/conf.d/${hostname}.conf	
 	/etc/init.d/nginx start
-	echo "-------------------------------" &&
-	echo "   add google successfully!    " &&
-	echo "-------------------------------"
+	echo "----------------------------------------------------------------" &&
+	echo "  ${CSUCCESS}install google reverse proxy successfully!${CEND}  " &&
+	echo "----------------------------------------------------------------"
+}
+function init(){
+    echo "----------------------------------------------------------------"
+	echo "               begin to initialize system                       "
+    echo "----------------------------------------------------------------"
+	cd /root
+    # create packages and conf directory
+	if [ ! -d ${lnmpdir} ]
+	then 
+	    mkdir ${lnmpdir}
+		mkdir ${lnmpdir}/packages
+		mkdir ${lnmpdir}/conf
+	fi
+	CheckSystem
+	remove_unneeded
+	install_dotdeb
+	Timezone
+	CloseSelinux
+	downloadfiles
+	echo "-----------------------------------------------------------------" &&
+	echo "          ${CSUCCESS}initialize system successfully!${CEND}      " &&
+	echo "-----------------------------------------------------------------"
+}
+function installlnmp(){
+    #init system
+	init
+	#install mysql, php, nginx
+	installmysql
+	installphp
+	installnginx	
+	#set web dir
+	cp -r ${lnmpdir}/packages/phpMyAdmin /var/www 
+	#restart lnmp
+	echo "----------------------------------------------------------------" &&
+	echo "                 begin to restart lnmp!                         " &&
+	echo "----------------------------------------------------------------"	
+	/etc/init.d/nginx restart
+	/etc/init.d/php5-fpm restart
+	/etc/init.d/mysql restart
+	echo "----------------------------------------------------------------" &&
+	echo "      ${CSUCCESS}lnmp install successfully!${CEND}              " &&
+	echo "----------------------------------------------------------------"
+	echo "Start time: ${StartDate}";
+	echo "Completion time: $(date) (Use: $[($(date +%s)-StartDateSecond)/60] minute)";
+}
+function addvhost(){
+    while :
+    do
+            echo
+            echo 'Please select host type:'
+            echo -e "\t${CMSG}1${CEND}. Install virtual host"
+            echo -e "\t${CMSG}2${CEND}. Install SSL virtual host"
+            echo -e "\t${CMSG}3${CEND}. Install google reverse proxy"
+            read -p "Please input a number:(Default 1 press Enter) " host_type
+            [ -z "$host_type" ] && host_type=1
+            if [[ ! $host_type =~ ^[1-3]$ ]];then
+                echo "${CWARNING}input error! Please only input number 1,2,3${CEND}"
+            else
+                if [ "$host_type" == '1' ]
+				then
+					virtualhost
+				fi
+				if [ "$host_type" == '2' ]
+				then
+					sslvirtualhost
+				fi
+				if [ "$host_type" == '3' ]
+				then
+					googlereverse
+			    fi
+				break
+            fi
+    done
+}
+function delvhost(){
+    echo "----------------------------------------------------------"
+	echo "                   begin to delete host                   "
+    echo "----------------------------------------------------------"
+	echo "please input hostname(like tennfy.com):"
+	read hostname
+	if [ -f /etc/nginx/conf.d/${hostname}.conf ]
+	then
+	    rm -f /etc/nginx/conf.d/${hostname}.conf
+	fi
+	if [ -d /var/www/${hostname} ]
+	then 
+	    rm -r /var/www/${hostname}
+	fi
+	/etc/init.d/nginx start
+	echo "------------------------------------------------------------" &&
+	echo "   ${CSUCCESS}delete virtual host successfully!${CEND}      " &&
+	echo "------------------------------------------------------------"
 }
 
 ######################### Initialization ################################################
@@ -542,17 +596,14 @@ case "$action" in
 install)
     installlnmp
     ;;
-addvhost)
-    addvirtualhost
+addhost)
+    addvhost
     ;;
-addsslvhost)
-    addsslvirtualhost
-    ;;
-addgoogle)
-    addgoogle
+delhost)
+    delvhost
     ;;
 *)
     echo "Arguments error! [${action} ]"
-    echo "Usage: `basename $0` {install|addvhost|addsslvhost|addgoogle}"
+    echo "Usage: `basename $0` {install|addvhost|uninstall}"
     ;;
 esac
