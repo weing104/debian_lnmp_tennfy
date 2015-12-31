@@ -69,9 +69,9 @@ function CheckSystem()
         do
             echo
             echo 'Please select php version:'
-            echo -e "\t${CMSG}1${CEND}. Install PHP-4"
-            echo -e "\t${CMSG}2${CEND}. Install PHP-5"
-            echo -e "\t${CMSG}3${CEND}. Install PHP-6"
+            echo -e "\t${CMSG}1${CEND}. Install PHP-5.4"
+            echo -e "\t${CMSG}2${CEND}. Install PHP-5.5"
+            echo -e "\t${CMSG}3${CEND}. Install PHP-5.6"
             read -p "Please input a number:(Default 1 press Enter) " php_version
             [ -z "$php_version" ] && php_version=1
             if [[ ! $php_version =~ ^[1-3]$ ]];then
@@ -638,7 +638,7 @@ function uninstalllnmp(){
 	else
 		update-rc.d -f php5-fpm remove
         rm -rf /etc/php5 /usr/local/php /usr/local/libiconv /usr/local/curl /usr/local/mhash /usr/local/mcrypt /usr/local/libmcrypt /usr/local/libmcrypt
-		rm -f /etc/init.d/php5-fpm /usr/bin/php /usr/bin/phpize /usr/sbin/php5-fpm /var/run/php5-fpm.sock /var/run/php5-fpm.pid /var/log/php5-fpm.log
+		rm -f /etc/init.d/php5-fpm /usr/bin/php /usr/bin/phpize /usr/sbin/php5-fpm /var/run/php5-fpm.sock /var/run/php5-fpm.pid /var/log/php5-fpm.log 		
 	fi
 	#usinstall mysql
 	if [ ! -d /usr/local/mysql ]
