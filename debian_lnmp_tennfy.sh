@@ -18,6 +18,7 @@ echo ""
 
 #Variables
 lnmpdir='/opt/lnmp'
+Ramthreshold='512'
 MysqlPass=''
 SysName=''
 SysBit=''
@@ -53,32 +54,61 @@ function CheckSystem()
 	RamTotal=`free -m | grep 'Mem' | awk '{print $2}'`
 	RamSwap=`free -m | grep 'Swap' | awk '{print $2}'`
 	RamSum=$[$RamTotal+$RamSwap]
-	echo '------------------------------------------------------------------'
-	echo "${SysBit}Bit, ${Cpunum}*CPU, ${RamTotal}MB*RAM, ${RamSwap}MB*Swap"
-	echo '------------------------------------------------------------------'	
-	if [ "$RamSum" -lt '512' ]
+	echo '-----------------------------------------------------------------'
+	echo "${SysBit}Bit, ${Cpunum}*CPU, ${RamTotal}MB*RAM, ${RamSwap}MB*Swap"	
+	if [ "$RamSum" -lt "$Ramthreshold" ]
 	then
 	    echo 'Script will install mysql and php by apt-get'
+		echo '-------------------------------------------------------------'
 		
 	else
 	    echo 'Script will install mysql and php by compile'
+		echo '------------------------------------------------------------------'
+		#select php version
+		while :
+        do
+            echo
+            echo 'Please select php version:'
+            echo -e "\t${CMSG}1${CEND}. Install PHP-4"
+            echo -e "\t${CMSG}2${CEND}. Install PHP-5"
+            echo -e "\t${CMSG}3${CEND}. Install PHP-6"
+            read -p "Please input a number:(Default 1 press Enter) " php_version
+            [ -z "$php_version" ] && php_version=1
+            if [[ ! $php_version =~ ^[1-3]$ ]];then
+                echo "${CWARNING}input error! Please only input number 1,2,3${CEND}"
+            else
+                if [ "$php_version" == '1' ]
+				then
+					PhpVersion='php-5.4.45'
+				fi
+				if [ "$php_version" == '2' ]
+				then
+					PhpVersion='php-5.5.30'
+				fi
+				if [ "$php_version" == '3' ]
+				then
+					PhpVersion='php-5.6.16'
+			    fi
+				break
+            fi
+    done
 	    #input mysql password
 		InputMysqlPass
 	fi
 }
 function InputMysqlPass()
 {
-    echo '----------------------------------------'
-	echo '      Please input MySQL password:      '
-	echo '----------------------------------------'
+    echo
+    echo '---------------------------------------------------------------'
+	echo '                   Please input MySQL password:                '
+	echo '---------------------------------------------------------------'
 	read  MysqlPass
 	if [ "$MysqlPass" == '' ]
 	then
-		echo '[Error] MySQL password is empty.'
+		echo -e "${CFAILURE}[Error] MySQL password is empty.${CEND}"
 		InputMysqlPass
 	else
-		echo '[OK] Your MySQL password is:'
-		echo $MysqlPass
+		echo -e "${CMSG}[OK] Your MySQL password is:$MysqlPass${CEND}"
 	fi
 }
 function Timezone()
@@ -86,7 +116,7 @@ function Timezone()
 	rm -rf /etc/localtime
 	ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-	echo '[ntp Installing] ******************************** >>'
+	echo '[ntp Installing] **************************************************** >>'
 	apt-get install -y ntpdate
 	ntpdate -u pool.ntp.org
 	StartDate=$(date)
@@ -173,7 +203,7 @@ function remove_unneeded()
 }
 function install_dotdeb() 
 {
-    if [ "$RamSum" -lt '512' ]
+    if [ "$RamSum" -lt "$Ramthreshold" ]
 	then
 		echo -e 'deb http://packages.dotdeb.org stable all' >> /etc/apt/sources.list
 		echo -e 'deb-src http://packages.dotdeb.org stable all' >> /etc/apt/sources.list
@@ -230,10 +260,10 @@ function downloadfiles()
 }
 function installmysql()
 {
-    echo "---------------------------------"
-	echo "    begin to install mysql       "
-    echo "---------------------------------" 
-	if [ "$RamSum" -lt '512' ]
+    echo "----------------------------------------------------------------"
+	echo "                     begin to install mysql                     "
+    echo "----------------------------------------------------------------" 
+	if [ "$RamSum" -lt "$Ramthreshold" ]
 	then
 	    #install mysql
 		apt-get install -y mysql-client mysql-server
@@ -247,7 +277,7 @@ function installmysql()
 			cp  ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
 		fi
 	else
-		if [ ! -f /usr/local/mysql/bin/mysql ]
+		if [ ! -f /usr/local/mysql ]
 		then
 			mkdir /var/lib/mysql /var/run/mysqld /etc/mysql /etc/mysql/conf.d
 			cd ${lnmpdir}/packages/${MysqlVersion}
@@ -305,15 +335,15 @@ EOF
 	    fi		
 	fi
     /etc/init.d/mysql start
-	echo "---------------------------------"
-	echo "    mysql install finished       "
-	echo "---------------------------------"
+	echo "--------------------------------------------------------------"
+	echo "                      mysql install finished                  "
+	echo "--------------------------------------------------------------"
 }
 function installphp(){
-    echo "---------------------------------"
-	echo "    begin to install php         "
-    echo "---------------------------------"  
-    if [ "$RamSum" -lt '512' ]
+    echo "--------------------------------------------------------------"
+	echo "                      begin to install php                    "
+    echo "--------------------------------------------------------------"  
+    if [ "$RamSum" -lt "$Ramthreshold" ]
 	then	
 		apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
 		/etc/init.d/php5-fpm stop
@@ -357,14 +387,14 @@ function installphp(){
 		fi
 	fi
 	/etc/init.d/php5-fpm start	
-	echo "---------------------------------"
-	echo "    php install finished         "
-    echo "---------------------------------"	
+	echo "---------------------------------------------------------------"
+	echo "                    php install finished                       "
+    echo "---------------------------------------------------------------"	
 }
 function installnginx(){
-    echo "---------------------------------"
-	echo "    begin to install nginx       "
-    echo "---------------------------------"
+    echo "---------------------------------------------------------------"
+	echo "                      begin to install nginx                   "
+    echo "---------------------------------------------------------------"
 	#install nginx
 	if [ ! -f /usr/sbin/nginx ]
 	then
@@ -402,15 +432,15 @@ function installnginx(){
 
 	/etc/init.d/nginx start
 		
-	echo "---------------------------------"
-	echo "    nginx install finished       "
-    echo "---------------------------------"
+	echo "---------------------------------------------------------------"
+	echo "                   nginx install finished                      "
+    echo "---------------------------------------------------------------"
 	fi
 }
 function virtualhost(){
-    echo "----------------------------------------------------------"
-	echo "           begin to install virtual host                  "
-    echo "----------------------------------------------------------"
+    echo "---------------------------------------------------------------"
+	echo "           begin to install virtual host                       "
+    echo "---------------------------------------------------------------"
 	echo "please input hostname(like tennfy.com):"
 	read hostname
 	echo "please input url rewrite rule name(wordpress or discuz):"
@@ -433,14 +463,14 @@ function virtualhost(){
 EOF
 
 	/etc/init.d/nginx start
-	echo "------------------------------------------------------------" &&
-	echo "   ${CSUCCESS}install virtual host successfully!${CEND}     " &&
-	echo "------------------------------------------------------------"
+	echo -e "-----------------------------------------------------------" &&
+	echo -e "   ${CSUCCESS}install virtual host successfully!${CEND}    " &&
+	echo -e "-----------------------------------------------------------"
 }
 function sslvirtualhost(){
-    echo "------------------------------------------------------------"
-	echo "           begin to install ssl virtual host                "
-    echo "------------------------------------------------------------"
+    echo "--------------------------------------------------------------"
+	echo "           begin to install ssl virtual host                  "
+    echo "--------------------------------------------------------------"
 	echo "please input hostname(like tennfy.com):"
 	read hostname
 	echo "please input url rewrite rule name(wordpress or discuz):"
@@ -469,14 +499,14 @@ function sslvirtualhost(){
 EOF
 
 	/etc/init.d/nginx start
-	echo "--------------------------------------------------------------" &&
-	echo "   ${CSUCCESS}install ssl virtual host successfully!${CEND}   " &&
-	echo "--------------------------------------------------------------"
+	echo -e "------------------------------------------------------------" &&
+	echo -e "   ${CSUCCESS}install ssl virtual host successfully!${CEND} " &&
+	echo -e "------------------------------------------------------------"
 }
 function googlereverse(){
-	echo "--------------------------------------------------------------"
-	echo "            begin to install google reverse proxy             "
-    echo "--------------------------------------------------------------"
+	echo "---------------------------------------------------------------"
+	echo "            begin to install google reverse proxy              "
+    echo "---------------------------------------------------------------"
 	echo "please input hostname(like tennfy.com):"
 	read hostname
 	echo "please input ssl certificate file path:"
@@ -492,14 +522,14 @@ function googlereverse(){
 	sed -i 's#tennfy_certificate#'${certificate}'#g' /etc/nginx/conf.d/${hostname}.conf	
 	sed -i 's#tennfy_privatekey#'${privatekey}'#g' /etc/nginx/conf.d/${hostname}.conf	
 	/etc/init.d/nginx start
-	echo "----------------------------------------------------------------" &&
-	echo "  ${CSUCCESS}install google reverse proxy successfully!${CEND}  " &&
-	echo "----------------------------------------------------------------"
+	echo -e "-------------------------------------------------------------" &&
+	echo -e "${CSUCCESS}install google reverse proxy successfully!${CEND} " &&
+	echo -e "-------------------------------------------------------------"
 }
 function init(){
-    echo "----------------------------------------------------------------"
-	echo "               begin to initialize system                       "
-    echo "----------------------------------------------------------------"
+    echo -e "-------------------------------------------------------------"
+	echo -e "               begin to initialize system                    "
+    echo -e "-------------------------------------------------------------"
 	cd /root
     # create packages and conf directory
 	if [ ! -d ${lnmpdir} ]
@@ -514,9 +544,9 @@ function init(){
 	Timezone
 	CloseSelinux
 	downloadfiles
-	echo "-----------------------------------------------------------------" &&
-	echo "          ${CSUCCESS}initialize system successfully!${CEND}      " &&
-	echo "-----------------------------------------------------------------"
+	echo -e "------------------------------------------------------------" &&
+	echo -e "     ${CSUCCESS}initialize system successfully!${CEND}      " &&
+	echo -e "------------------------------------------------------------"
 }
 function installlnmp(){
     #init system
@@ -528,15 +558,15 @@ function installlnmp(){
 	#set web dir
 	cp -r ${lnmpdir}/packages/phpMyAdmin /var/www 
 	#restart lnmp
-	echo "----------------------------------------------------------------" &&
-	echo "                 begin to restart lnmp!                         " &&
-	echo "----------------------------------------------------------------"	
+	echo -e "-------------------------------------------------------------" &&
+	echo -e "                 begin to restart lnmp!                      " &&
+	echo -e "-------------------------------------------------------------"	
 	/etc/init.d/nginx restart
 	/etc/init.d/php5-fpm restart
 	/etc/init.d/mysql restart
-	echo "----------------------------------------------------------------" &&
-	echo "      ${CSUCCESS}lnmp install successfully!${CEND}              " &&
-	echo "----------------------------------------------------------------"
+	echo -e "-------------------------------------------------------------" &&
+	echo -e "      ${CSUCCESS}lnmp install successfully!${CEND}           " &&
+	echo -e "-------------------------------------------------------------"
 	echo "Start time: ${StartDate}";
 	echo "Completion time: $(date) (Use: $[($(date +%s)-StartDateSecond)/60] minute)";
 }
@@ -570,9 +600,9 @@ function addvhost(){
     done
 }
 function delvhost(){
-    echo "----------------------------------------------------------"
-	echo "                   begin to delete host                   "
-    echo "----------------------------------------------------------"
+    echo "--------------------------------------------------------------"
+	echo "                   begin to delete host                       "
+    echo "--------------------------------------------------------------"
 	echo "please input hostname(like tennfy.com):"
 	read hostname
 	if [ -f /etc/nginx/conf.d/${hostname}.conf ]
@@ -584,11 +614,48 @@ function delvhost(){
 	    rm -r /var/www/${hostname}
 	fi
 	/etc/init.d/nginx start
-	echo "------------------------------------------------------------" &&
-	echo "   ${CSUCCESS}delete virtual host successfully!${CEND}      " &&
-	echo "------------------------------------------------------------"
+	echo -e "------------------------------------------------------------" &&
+	echo -e "    ${CSUCCESS}delete virtual host successfully!${CEND}     " &&
+	echo -e "------------------------------------------------------------"
 }
-
+function uninstalllnmp(){
+    echo "--------------------------------------------------------------"
+	echo "                   begin to uninstall lnmp                    "
+    echo "--------------------------------------------------------------"
+    #stop all 
+	/etc/init.d/php5-fpm stop
+	/etc/init.d/nginx stop
+	/etc/init.d/mysql stop
+	#delete all install files
+	rm -rf /opt/lnmp
+	#delete all virtual hosts
+	rm -rf /var/www
+	#uninstall nginx
+	update-rc.d -f nginx remove
+	rm -rf /etc/nginx /etc/init.d/nginx
+	rm -f /var/log/nginx/access.log /usr/sbin/nginx /var/log/nginx/error.log /var/run/nginx.pid
+	#uninstall php
+	if [ ! -d /usr/local/php ]
+	then 
+		apt-get --purge remove php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli
+	else
+		update-rc.d -f php5-fpm remove
+        rm -rf /etc/php5 /usr/local/php /usr/local/libiconv /usr/local/curl /usr/local/mhash /usr/local/mcrypt /usr/local/libmcrypt /usr/local/libmcrypt
+		rm -f /etc/init.d/php5-fpm /usr/bin/php /usr/bin/phpize /usr/sbin/php5-fpm /var/run/php5-fpm.sock /var/run/php5-fpm.pid /var/log/php5-fpm.log
+	fi
+	#usinstall mysql
+	if [ ! -f /usr/local/mysql ]
+	then 
+	    apt-get --purge remove mysql-client mysql-server
+	else
+		update-rc.d -f mysql remove
+		rm -rf /etc/mysql /usr/local/mysql /var/lib/mysql /var/run/mysqld 
+		rm -f  /etc/init.d/mysql /usr/bin/mysql /usr/bin/mysqladmin /usr/bin/mysqldump /usr/bin/myisamchk /usr/bin/mysqld_safe /var/run/mysqld/mysqld.sock /etc/ld.so.conf.d/mysql.conf
+	fi 	
+	echo -e "------------------------------------------------------------" &&
+	echo -e "    ${CSUCCESS}uninstall lnmp successfully!${CEND}          " &&
+	echo -e "------------------------------------------------------------"
+}
 ######################### Initialization ################################################
 action=$1
 [ -z $1 ] && action=install
@@ -596,14 +663,17 @@ case "$action" in
 install)
     installlnmp
     ;;
-addhost)
+addvhost)
     addvhost
     ;;
-delhost)
+delvhost)
     delvhost
+    ;;
+uninstall)
+    uninstalllnmp
     ;;
 *)
     echo "Arguments error! [${action} ]"
-    echo "Usage: `basename $0` {install|addvhost|uninstall}"
+    echo "Usage: `basename $0` {install|addvhost|delvhost|uninstall}"
     ;;
 esac
