@@ -99,10 +99,7 @@ function CheckSystem()
 function InputMysqlPass()
 {
     echo
-    echo '---------------------------------------------------------------'
-	echo '                   Please input MySQL password:                '
-	echo '---------------------------------------------------------------'
-	read  MysqlPass
+	read -p 'Please input MySQL password:' MysqlPass
 	if [ "$MysqlPass" == '' ]
 	then
 		echo -e "${CFAILURE}[Error] MySQL password is empty.${CEND}"
@@ -632,8 +629,8 @@ function uninstalllnmp(){
 	rm -rf /var/www
 	#uninstall nginx
 	update-rc.d -f nginx remove
-	rm -rf /etc/nginx /etc/init.d/nginx
-	rm -f /var/log/nginx/access.log /usr/sbin/nginx /var/log/nginx/error.log /var/run/nginx.pid
+	rm -rf /etc/nginx /etc/init.d/nginx /var/log/nginx
+	rm -f  /usr/sbin/nginx  /var/run/nginx.pid
 	#uninstall php
 	if [ ! -d /usr/local/php ]
 	then 
@@ -644,7 +641,7 @@ function uninstalllnmp(){
 		rm -f /etc/init.d/php5-fpm /usr/bin/php /usr/bin/phpize /usr/sbin/php5-fpm /var/run/php5-fpm.sock /var/run/php5-fpm.pid /var/log/php5-fpm.log
 	fi
 	#usinstall mysql
-	if [ ! -f /usr/local/mysql ]
+	if [ ! -d /usr/local/mysql ]
 	then 
 	    apt-get --purge remove mysql-client mysql-server
 	else
