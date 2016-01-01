@@ -293,9 +293,9 @@ EOF
 	else
 		if [ "$php_version" == '1' ]
 		then
-			wget http://pecl.php.net/get/zendopcache-7.0.4.tgz
-			tar xzf zendopcache-7.0.4.tgz -C ${lnmpdir}/packages
-			cd ${lnmpdir}/packages/zendopcache-7.0.4
+			wget http://pecl.php.net/get/zendopcache-7.0.5.tgz
+			tar xzf zendopcache-7.0.5.tgz -C ${lnmpdir}/packages
+			cd ${lnmpdir}/packages/zendopcache-7.0.5
 			/usr/local/php/bin/phpize
 			./configure --with-php-config=/usr/local/php/bin/php-config
 			make
@@ -312,7 +312,7 @@ opcache.enable_cli=1
 EOF
 			 
 			cd /root
-			rm -f zendopcache-7.0.4.tgz
+			rm -f zendopcache-7.0.5.tgz
         else
 		    cat >> /etc/php5/php.ini<<EOF
 [opcache]
@@ -441,7 +441,7 @@ function installphp(){
 			groupadd www-data
 			useradd -m -s /sbin/nologin -g www-data www-data
 			[ "$ZendOpcache" == 'y' ] && [ "$php_version" == '2' -o "$php_version" == '3' ] && PHP_cache_tmp='--enable-opcache' || PHP_cache_tmp=''  
-			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --without-pear --disable-fileinfo --with-mcrypt=/usr/local/libmcrypt $PHP_cache_tmp
+			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --without-pear --disable-fileinfo --with-mcrypt=/usr/local/libmcrypt $PHP_cache_tmp
 			make
 			make install
 			
