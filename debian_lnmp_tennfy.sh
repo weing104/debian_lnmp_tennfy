@@ -293,9 +293,9 @@ EOF
 	else
 		if [ "$php_version" == '1' ]
 		then
-			wget http://pecl.php.net/get/zendopcache-7.0.5.tgz
-			tar xzf zendopcache-7.0.5.tgz -C ${lnmpdir}/packages
-			cd ${lnmpdir}/packages/zendopcache-7.0.5
+			wget http://pecl.php.net/get/zendopcache-7.0.4.tgz
+			tar xzf zendopcache-7.0.4.tgz -C ${lnmpdir}/packages
+			cd ${lnmpdir}/packages/zendopcache-7.0.4
 			/usr/local/php/bin/phpize
 			./configure --with-php-config=/usr/local/php/bin/php-config
 			make
@@ -312,11 +312,11 @@ opcache.enable_cli=1
 EOF
 			 
 			cd /root
-			rm -f zendopcache-7.0.5.tgz
+			rm -f zendopcache-7.0.4.tgz
         else
 		    cat >> /etc/php5/php.ini<<EOF
 [opcache]
-zend_extension=opcache.so
+zend_extension="`/usr/local/php/bin/php-config --extension-dir`/opcache.so"
 opcache.enable=1
 opcache.memory_consumption=128
 opcache.max_accelerated_files=4000
