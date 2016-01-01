@@ -19,6 +19,8 @@ echo ""
 #Variables
 lnmpdir='/opt/lnmp'
 Ramthreshold='512'
+ZendOpcache=''
+php_version=''
 MysqlPass=''
 SysName=''
 SysBit=''
@@ -74,7 +76,8 @@ function CheckSystem()
             echo -e "\t${CMSG}3${CEND}. Install PHP-5.6"
             read -p "Please input a number:(Default 1 press Enter) " php_version
             [ -z "$php_version" ] && php_version=1
-            if [[ ! $php_version =~ ^[1-3]$ ]];then
+            if [[ ! $php_version =~ ^[1-3]$ ]]
+			then
                 echo "${CWARNING}input error! Please only input number 1,2,3${CEND}"
             else
                 if [ "$php_version" == '1' ]
@@ -91,9 +94,21 @@ function CheckSystem()
 			    fi
 				break
             fi
-    done
+		done
+		#select zendopcache
+		while :
+		do
+			echo
+			read -p "Do you want to install ZendOpcache? [y/n]: " ZendOpcache
+			if [[ ! $ZendOpcache =~ ^[y,n]$ ]]
+			then
+				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
+			else
+			    break
+			fi
+		done
 	    #input mysql password
-		InputMysqlPass
+		InputMysqlPass		
 	fi
 }
 function InputMysqlPass()
@@ -255,6 +270,65 @@ function downloadfiles()
 	rm -r ngx_http_google_filter_module
 	rm -r ngx_http_substitutions_filter_module
 }
+function zendopcache()
+{   echo "----------------------------------------------------------------"
+	echo "                begin to install zendopcache                    "
+    echo "----------------------------------------------------------------" 
+    if [ "$RamSum" -lt "$Ramthreshold" ]
+	then
+		apt-get install -y php-pear build-essential php5-dev
+		pecl install zendopcache-7.0.5
+		cat > /etc/php5/mods-available/opcache.ini<<EOF
+zend_extension=/usr/lib/php5/20100525+lfs/opcache.so
+opcache.memory_consumption=128
+opcache.interned_strings_buffer=8
+opcache.max_accelerated_files=4000
+opcache.revalidate_freq=60
+opcache.fast_shutdown=1
+opcache.enable_cli=1
+EOF
+    
+	    ln -s /etc/php5/mods-available/opcache.ini /etc/php5/conf.d/20-opcache.ini
+	    apt-get --purge remove php5-dev
+	else
+		if [ "$php_version" == '1' ]
+		then
+			wget http://pecl.php.net/get/zendopcache-7.0.5.tgz
+			tar xzf zendopcache-7.0.5.tgz -C ${lnmpdir}/packages
+			cd ${lnmpdir}/packages/zendopcache-7.0.5
+			/usr/local/php/bin/phpize
+			./configure --with-php-config=/usr/local/php/bin/php-config
+			make
+			make install
+			cat >> /etc/php5/php.ini<<EOF
+zend_extension=/usr/local/php/lib/php/extensions/no-debug-non-zts-20090626/opcache.so
+opcache.memory_consumption=128
+opcache.interned_strings_buffer=8
+opcache.max_accelerated_files=4000
+opcache.revalidate_freq=60
+opcache.fast_shutdown=1
+opcache.enable_cli=1
+EOF
+			
+			cd /root
+        else
+		    cat >> /etc/php5/php.ini<<EOF
+zend_extension=/usr/local/php/lib/php/extensions/no-debug-non-zts-20090626/opcache.so
+opcache.memory_consumption=128
+opcache.interned_strings_buffer=8
+opcache.max_accelerated_files=4000
+opcache.revalidate_freq=60
+opcache.fast_shutdown=1
+opcache.enable_cli=1
+EOF
+		fi	   
+    fi
+	/etc/init.d/php5-fpm restart
+	/etc/init.d/nginx restart
+	echo "--------------------------------------------------------------"
+	echo "                zendopcache install finished                  "
+	echo "--------------------------------------------------------------"
+}
 function installmysql()
 {
     echo "----------------------------------------------------------------"
@@ -365,7 +439,8 @@ function installphp(){
 			cd ${lnmpdir}/packages/${PhpVersion}
 			groupadd www-data
 			useradd -m -s /sbin/nologin -g www-data www-data
-			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --without-pear --disable-fileinfo --with-mcrypt=/usr/local/libmcrypt
+			[ "$ZendOpcache" == 'y' ] && [ "$php_version" == '2' -o "$php_version" == '3' ] && PHP_cache_tmp='--enable-opcache' || PHP_cache_tmp=''  
+			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 $PHP_cache_tmp--with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --without-pear --disable-fileinfo --with-mcrypt=/usr/local/libmcrypt
 			make
 			make install
 			
@@ -552,6 +627,8 @@ function installlnmp(){
 	installmysql
 	installphp
 	installnginx	
+	#install extention
+	[ "$ZendOpcache" == 'y' ] && zendopcache
 	#set web dir
 	cp -r ${lnmpdir}/packages/phpMyAdmin /var/www 
 	#restart lnmp
