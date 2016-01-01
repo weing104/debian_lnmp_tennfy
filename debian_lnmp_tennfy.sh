@@ -96,17 +96,17 @@ function CheckSystem()
             fi
 		done
 		#select zendopcache
-		while :
-		do
-			echo
-			read -p "Do you want to install ZendOpcache? [y/n]: " ZendOpcache
-			if [[ ! $ZendOpcache =~ ^[y,n]$ ]]
-			then
-				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
-			else
-			    break
-			fi
-		done
+		#while :
+		#do
+			#echo
+			#read -p "Do you want to install ZendOpcache? [y/n]: " ZendOpcache
+			#if [[ ! $ZendOpcache =~ ^[y,n]$ ]]
+			#then
+			#	echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
+			#else
+			#    break
+			#fi
+		#done
 	    #input mysql password
 		InputMysqlPass		
 	fi
@@ -440,8 +440,8 @@ function installphp(){
 			cd ${lnmpdir}/packages/${PhpVersion}
 			groupadd www-data
 			useradd -m -s /sbin/nologin -g www-data www-data
-			[ "$ZendOpcache" == 'y' ] && [ "$php_version" == '2' -o "$php_version" == '3' ] && PHP_cache_tmp='--enable-opcache' || PHP_cache_tmp=''  
-			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 $PHP_cache_tmp--with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --without-pear --disable-fileinfo --with-mcrypt=/usr/local/libmcrypt
+			#[ "$ZendOpcache" == 'y' ] && [ "$php_version" == '2' -o "$php_version" == '3' ] && PHP_cache_tmp='--enable-opcache' || PHP_cache_tmp=''  
+			./configure --prefix=/usr/local/php --enable-fpm --with-fpm-user=www-data --with-fpm-group=www-data --with-config-file-path=/etc/php5 --with-config-file-scan-dir=/etc/php5 --with-openssl --with-zlib  --with-curl=/usr/local/curl --enable-ftp --with-gd --with-jpeg-dir --with-png-dir --with-freetype-dir --enable-gd-native-ttf --enable-mbstring --enable-zip --with-iconv=/usr/local/libiconv --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --without-pear --disable-fileinfo --with-mcrypt=/usr/local/libmcrypt
 			make
 			make install
 			
@@ -629,7 +629,7 @@ function installlnmp(){
 	installphp
 	installnginx	
 	#install extention
-	[ "$ZendOpcache" == 'y' ] && zendopcache
+	#[ "$ZendOpcache" == 'y' ] && zendopcache
 	#set web dir
 	cp -r ${lnmpdir}/packages/phpMyAdmin /var/www 
 	#restart lnmp
