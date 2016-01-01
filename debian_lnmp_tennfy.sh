@@ -301,7 +301,8 @@ EOF
 			make
 			make install
 			cat >> /etc/php5/php.ini<<EOF
-zend_extension=/usr/local/php/lib/php/extensions/no-debug-non-zts-20090626/opcache.so
+[opcache]
+zend_extension="`/usr/local/php/bin/php-config --extension-dir`/opcache.so"
 opcache.memory_consumption=128
 opcache.interned_strings_buffer=8
 opcache.max_accelerated_files=4000
@@ -309,17 +310,17 @@ opcache.revalidate_freq=60
 opcache.fast_shutdown=1
 opcache.enable_cli=1
 EOF
-			
+			 
 			cd /root
+			rm -f zendopcache-7.0.5.tgz
         else
 		    cat >> /etc/php5/php.ini<<EOF
-zend_extension=/usr/local/php/lib/php/extensions/no-debug-non-zts-20090626/opcache.so
+[opcache]
+zend_extension=opcache.so
+opcache.enable=1
 opcache.memory_consumption=128
-opcache.interned_strings_buffer=8
 opcache.max_accelerated_files=4000
 opcache.revalidate_freq=60
-opcache.fast_shutdown=1
-opcache.enable_cli=1
 EOF
 		fi	   
     fi
