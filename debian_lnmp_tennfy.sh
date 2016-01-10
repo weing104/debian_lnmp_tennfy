@@ -353,6 +353,9 @@ function memcached()
 		apt-get install memcached php5-memcache php5-memcached
 	else
 		#install memcached server
+		id -u memcached >/dev/null 2>&1
+		[ $? -ne 0 ] && useradd -M -s /sbin/nologin memcached
+		
 		wget http://www.memcached.org/files/memcached-1.4.25.tar.gz
 		tar xzf memcached-1.4.25.tar.gz -C ${lnmpdir}/packages
 		cd ${lnmpdir}/packages/memcached-1.4.25 
