@@ -135,8 +135,8 @@ function CheckSystem()
 		while :
 		do
 			echo
-			read -p "Do you want to install Memcached? [y/n]: " Memcached
-			if [[ ! $Memcached =~ ^[y,n]$ ]]
+			read -p "Do you want to install Memcached? [y/n]: " memcached
+			if [[ ! $memcached =~ ^[y,n]$ ]]
 			then
 				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
 			else
@@ -546,7 +546,7 @@ function installphp(){
 			
 			#cp configuration file
 			cp 	${lnmpdir}/conf/php.ini /etc/php5/php.ini
-			sed -i "s#extension_dir = \"ext\"#extension_dir = \"`$php_install_dir/bin/php-config --extension-dir`\"#g" /etc/php5/php.ini
+			sed -i "s#extension_dir = \"ext\"#extension_dir = \"`/usr/local/php/bin/php-config --extension-dir`\"#g" /etc/php5/php.ini
 			cp 	${lnmpdir}/conf/php-fpm.conf /etc/php5/php-fpm.conf
 			cp 	${lnmpdir}/conf/php5-fpm /etc/init.d/php5-fpm
 			chmod +x /etc/init.d/php5-fpm
