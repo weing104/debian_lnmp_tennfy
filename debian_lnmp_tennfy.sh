@@ -20,6 +20,7 @@ echo ""
 lnmpdir='/opt/lnmp'
 Ramthreshold='512'
 ZendOpcache=''
+Memcached=''
 php_version=''
 MysqlPass=''
 SysName=''
@@ -62,10 +63,33 @@ function CheckSystem()
 	then
 	    echo 'Script will install mysql and php by apt-get'
 		echo '-------------------------------------------------------------'
-		
+		#select zendopcache
+		while :
+		do
+			echo
+			read -p "Do you want to install ZendOpcache? [y/n]: " ZendOpcache
+			if [[ ! $ZendOpcache =~ ^[y,n]$ ]]
+			then
+				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
+			else
+			    break
+			fi
+		done
+		#select memcached
+		while :
+		do
+			echo
+			read -p "Do you want to install Memcached? [y/n]: " Memcached
+			if [[ ! $Memcached =~ ^[y,n]$ ]]
+			then
+				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
+			else
+			    break
+			fi
+		done
 	else
 	    echo 'Script will install mysql and php by compile'
-		echo '------------------------------------------------------------------'
+		echo '-------------------------------------------------------------'
 		#select php version
 		while :
         do
@@ -101,6 +125,18 @@ function CheckSystem()
 			echo
 			read -p "Do you want to install ZendOpcache? [y/n]: " ZendOpcache
 			if [[ ! $ZendOpcache =~ ^[y,n]$ ]]
+			then
+				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
+			else
+			    break
+			fi
+		done
+		#select memcached
+		while :
+		do
+			echo
+			read -p "Do you want to install Memcached? [y/n]: " Memcached
+			if [[ ! $Memcached =~ ^[y,n]$ ]]
 			then
 				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
 			else
@@ -279,6 +315,7 @@ function zendopcache()
 		apt-get install -y php-pear build-essential php5-dev
 		pecl install zendopcache-7.0.5
 		cat > /etc/php5/mods-available/opcache.ini<<EOF
+[opcache]
 zend_extension=/usr/lib/php5/20100525+lfs/opcache.so
 opcache.memory_consumption=128
 opcache.interned_strings_buffer=8
@@ -330,6 +367,68 @@ EOF
 	echo "                zendopcache install finished                  "
 	echo "--------------------------------------------------------------"
 }
+function memcached()
+{   echo "----------------------------------------------------------------"
+	echo "                begin to install memcached                    "
+    echo "----------------------------------------------------------------" 
+    if [ "$RamSum" -lt "$Ramthreshold" ]
+	then
+		apt-get install memcached php5-memcache php5-memcached
+	else
+		#install memcached server
+		wget http://www.memcached.org/files/memcached-1.4.25.tar.gz
+		tar xzf memcached-1.4.25.tar.gz -C ${lnmpdir}/packages
+		cd ${lnmpdir}/packages/memcached-1.4.25 
+		./configure --prefix=/usr/local/memcached   
+		make && make install
+		
+		ln -s /usr/local/memcached/bin/memcached /usr/bin/memcached	
+		cp 	${lnmpdir}/conf/memcached /etc/init.d/memcached
+		chmod +x /etc/init.d/memcached
+		update-rc.d memcached defaults
+		/etc/init.d/memcached start
+		cd /root	
+		rm -f memcached-1.4.25.tar.gz
+		
+		#install php-memcache
+		wget http://pecl.php.net/get/memcache-3.0.8.tgz
+		tar xzf memcache-3.0.8.tgz -C ${lnmpdir}/packages
+		cd ${lnmpdir}/packages/memcache-3.0.8
+		/usr/local/php/bin/phpize
+		./configure --with-php-config=/usr/local/php/bin/php-config
+		make && make install
+		
+        sed -i 's#^extension_dir\(.*\)#extension_dir\1\nextension = "memcache.so"#g' /etc/php5/php.ini	
+		cd /root	
+		rm -f memcache-3.0.8.tgz
+		
+        #install php-memcached
+		wget https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz
+		tar xzf libmemcached-1.0.18.tar.gz -C ${lnmpdir}/packages
+		cd ${lnmpdir}/packages/libmemcached-1.0.18
+		sed -i "s#lthread -pthread -pthreads#lthread -lpthread -pthreads#g" ./configure
+		./configure --with-memcached=/usr/local/memcached  
+		make && make install
+		cd /root
+		rm -f libmemcached-1.0.18.tar.gz
+		 
+		wget http://pecl.php.net/get/memcached-2.2.0.tgz
+		tar xzf memcached-2.2.0.tgz	-C ${lnmpdir}/packages
+		cd ${lnmpdir}/packages/memcached-2.2.0
+		/usr/local/php/bin/phpize
+		./configure --with-php-config=/usr/local/php/bin/php-config
+		make && make install
+		
+		sed -i 's#^extension_dir\(.*\)#extension_dir\1\nextension = "memcached.so"#g' /etc/php5/php.ini	
+		cd /root	
+		rm -f memcached-2.2.0.tgz
+    fi
+	/etc/init.d/php5-fpm restart
+	/etc/init.d/nginx restart
+	echo "--------------------------------------------------------------"
+	echo "                memcached install finished                    "
+	echo "--------------------------------------------------------------"
+}
 function installmysql()
 {
     echo "----------------------------------------------------------------"
@@ -349,7 +448,7 @@ function installmysql()
 			cp  ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
 		fi
 	else
-		if [ ! -f /usr/local/mysql ]
+		if [ ! -d /usr/local/mysql ]
 		then
 			mkdir /var/lib/mysql /var/run/mysqld /etc/mysql /etc/mysql/conf.d
 			cd ${lnmpdir}/packages/${MysqlVersion}
@@ -447,6 +546,7 @@ function installphp(){
 			
 			#cp configuration file
 			cp 	${lnmpdir}/conf/php.ini /etc/php5/php.ini
+			sed -i "s#extension_dir = \"ext\"#extension_dir = \"`$php_install_dir/bin/php-config --extension-dir`\"#g" /etc/php5/php.ini
 			cp 	${lnmpdir}/conf/php-fpm.conf /etc/php5/php-fpm.conf
 			cp 	${lnmpdir}/conf/php5-fpm /etc/init.d/php5-fpm
 			chmod +x /etc/init.d/php5-fpm
@@ -630,6 +730,7 @@ function installlnmp(){
 	installnginx	
 	#install extention
 	[ "$ZendOpcache" == 'y' ] && zendopcache
+	[ "$memcached" == 'y' ] && memcached
 	#set web dir
 	cp -r ${lnmpdir}/packages/phpMyAdmin /var/www 
 	#restart lnmp
