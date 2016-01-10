@@ -63,30 +63,6 @@ function CheckSystem()
 	then
 	    echo 'Script will install mysql and php by apt-get'
 		echo '-------------------------------------------------------------'
-		#select zendopcache
-		while :
-		do
-			echo
-			read -p "Do you want to install ZendOpcache? [y/n]: " ZendOpcache
-			if [[ ! $ZendOpcache =~ ^[y,n]$ ]]
-			then
-				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
-			else
-			    break
-			fi
-		done
-		#select memcached
-		while :
-		do
-			echo
-			read -p "Do you want to install Memcached? [y/n]: " Memcached
-			if [[ ! $Memcached =~ ^[y,n]$ ]]
-			then
-				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
-			else
-			    break
-			fi
-		done
 	else
 	    echo 'Script will install mysql and php by compile'
 		echo '-------------------------------------------------------------'
@@ -119,33 +95,34 @@ function CheckSystem()
 				break
             fi
 		done
-		#select zendopcache
-		while :
-		do
-			echo
-			read -p "Do you want to install ZendOpcache? [y/n]: " ZendOpcache
-			if [[ ! $ZendOpcache =~ ^[y,n]$ ]]
-			then
-				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
-			else
-			    break
-			fi
-		done
-		#select memcached
-		while :
-		do
-			echo
-			read -p "Do you want to install Memcached? [y/n]: " memcached
-			if [[ ! $memcached =~ ^[y,n]$ ]]
-			then
-				echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
-			else
-			    break
-			fi
-		done
-	    #input mysql password
-		InputMysqlPass		
-	fi
+	fi	
+	#select zendopcache
+	while :
+	do
+		echo
+		read -p "Do you want to install ZendOpcache? [y/n]: " ZendOpcache
+		if [[ ! $ZendOpcache =~ ^[y,n]$ ]]
+		then
+			echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
+		else
+			break
+		fi
+	done
+	#select memcached
+	while :
+	do
+		echo
+		read -p "Do you want to install Memcached? [y/n]: " memcached
+		if [[ ! $memcached =~ ^[y,n]$ ]]
+		then
+			echo "${CWARNING}input error! Please only input 'y' or 'n'${CEND}"
+		else
+			break
+		fi
+	done
+	#input mysql password
+	InputMysqlPass		
+	
 }
 function InputMysqlPass()
 {
@@ -437,6 +414,8 @@ function installmysql()
 	if [ "$RamSum" -lt "$Ramthreshold" ]
 	then
 	    #install mysql
+		debconf-set-selections <<< "mysql-server mysql-server/root_password password $MysqlPass"
+		debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $MysqlPass"
 		apt-get install -y mysql-client mysql-server
 		# Install a low-end copy of the my.cnf to disable InnoDB
 		/etc/init.d/mysql stop
