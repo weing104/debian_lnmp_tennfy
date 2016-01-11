@@ -156,50 +156,69 @@ function InstallLibiconv()
 {
 	if [ ! -d /usr/local/libiconv ]
 	then
+		#download libiconv
+		wget http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz
+		tar -zxvf libiconv-1.14.tar.gz -C ${lnmpdir}/packages	
 		cd ${lnmpdir}/packages/libiconv-1.14
 		./configure --prefix=/usr/local/libiconv
 		make
 		make install
 		cd /root
+		rm -f libiconv-1.14.tar.gz
 	fi
 }
 function Installcurl()
 {
 	if [ ! -d /usr/local/curl ]
 	then
+		#download curl
+		wget http://curl.haxx.se/download/curl-7.46.0.tar.gz
+		tar -zxvf curl-7.46.0.tar.gz -C ${lnmpdir}/packages	
 		cd ${lnmpdir}/packages/curl-7.46.0
 		./configure --prefix=/usr/local/curl
 		make
 		make install
 		cd /root
+		rm -f curl-7.46.0.tar.gz
 	fi
 }
 function Installlibmcrypt()
 {
 	if [ ! -d /usr/local/libmcrypt ]
 	then
+		#download Libmcrypt
+		wget http://downloads.sourceforge.net/project/mcrypt/Libmcrypt/2.5.8/libmcrypt-2.5.8.tar.gz
+		tar -zxvf libmcrypt-2.5.8.tar.gz -C ${lnmpdir}/packages
 		cd ${lnmpdir}/packages/libmcrypt-2.5.8
 		./configure --prefix=/usr/local/libmcrypt
 		make
 		make install
 		cd /root
+		rm -f libmcrypt-2.5.8.tar.gz
 	fi
 }
 function Installmhash()
 {
 	if [ ! -d /usr/local/mhash ]
 	then
+		#download mhash
+		wget http://downloads.sourceforge.net/project/mhash/mhash/0.9.9.9/mhash-0.9.9.9.tar.gz
+		tar -zxvf mhash-0.9.9.9.tar.gz -C ${lnmpdir}/packages
 		cd ${lnmpdir}/packages/mhash-0.9.9.9
 		./configure --prefix=/usr/local/mhash
 		make
 		make install
 		cd /root
+		rm -f mhash-0.9.9.9.tar.gz
 	fi
 }
 function Installmcrypt()
 {
 	if [ ! -d /usr/local/mcrypt ]
-	then
+	then	
+		#download mcrypt
+		wget http://downloads.sourceforge.net/project/mcrypt/MCrypt/2.6.8/mcrypt-2.6.8.tar.gz
+		tar -zxvf mcrypt-2.6.8.tar.gz -C ${lnmpdir}/packages
 		cd ${lnmpdir}/packages/mcrypt-2.6.8
 		ln -s /usr/local/libmcrypt/bin/libmcrypt-config   /usr/bin/libmcrypt-config  #添加软连接
         export LD_LIBRARY_PATH=/usr/local/mhash/lib:/usr/local/libmcrypt/lib
@@ -209,6 +228,7 @@ function Installmcrypt()
 		make
 		make install
 		cd /root
+		rm -f mcrypt-2.6.8.tar.gz
 	fi
 }
 function remove_unneeded() 
@@ -241,31 +261,10 @@ function install_dotdeb()
 	fi
 }
 function downloadfiles()
-{
-    #download libiconv
-	wget http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz
-	tar -zxvf libiconv-1.14.tar.gz -C ${lnmpdir}/packages	
-	#download Libmcrypt
-	wget http://downloads.sourceforge.net/project/mcrypt/Libmcrypt/2.5.8/libmcrypt-2.5.8.tar.gz
-	tar -zxvf libmcrypt-2.5.8.tar.gz -C ${lnmpdir}/packages
-	#download mhash
-	wget http://downloads.sourceforge.net/project/mhash/mhash/0.9.9.9/mhash-0.9.9.9.tar.gz
-	tar -zxvf mhash-0.9.9.9.tar.gz -C ${lnmpdir}/packages
-	#download mcrypt
-	wget http://downloads.sourceforge.net/project/mcrypt/MCrypt/2.6.8/mcrypt-2.6.8.tar.gz
-	tar -zxvf mcrypt-2.6.8.tar.gz -C ${lnmpdir}/packages
-	#download curl
-	wget http://curl.haxx.se/download/curl-7.46.0.tar.gz
-	tar -zxvf curl-7.46.0.tar.gz -C ${lnmpdir}/packages
+{	
 	#download nginx
 	wget http://nginx.org/download/${NginxVersion}.tar.gz
 	tar -zxvf ${NginxVersion}.tar.gz -C ${lnmpdir}/packages
-	#download mysql
-	wget http://cdn.mysql.com//Downloads/MySQL-5.5/${MysqlVersion}.tar.gz
-	tar -zxvf ${MysqlVersion}.tar.gz -C ${lnmpdir}/packages
-	#download php
-	wget http://php.net/distributions/${PhpVersion}.tar.gz
-	tar -zxvf ${PhpVersion}.tar.gz -C ${lnmpdir}/packages
 	#download phpmyadmin
 	wget --no-check-certificate https://raw.githubusercontent.com/tennfy/debian_lnmp_tennfy/master/phpMyAdmin.tar.gz
 	tar -zxvf phpMyAdmin.tar.gz -C ${lnmpdir}/packages
@@ -422,17 +421,14 @@ function installmysql()
 		apt-get install -y mysql-client mysql-server
 		# Install a low-end copy of the my.cnf to disable InnoDB
 		/etc/init.d/mysql stop
-		if [ -f ${lnmpdir}/conf/my.cnf ]
-		then
-			rm  /etc/mysql/my.cnf
-			cp  ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
-		else
-			cp  ${lnmpdir}/conf/my.cnf /etc/mysql/my.cnf
-		fi
+		cp  ${lnmpdir}/conf/lowend.cnf /etc/mysql/conf.d/lowend.cnf 
 	else
 		if [ ! -d /usr/local/mysql ]
 		then
 			mkdir /var/lib/mysql /var/run/mysqld /etc/mysql /etc/mysql/conf.d
+			#download mysql
+			wget http://cdn.mysql.com//Downloads/MySQL-5.5/${MysqlVersion}.tar.gz
+			tar -zxvf ${MysqlVersion}.tar.gz -C ${lnmpdir}/packages
 			cd ${lnmpdir}/packages/${MysqlVersion}
 			groupadd mysql
 			useradd -s /sbin/nologin -g mysql mysql
@@ -484,7 +480,8 @@ EOF
 # **************************************
            /etc/init.d/mysql stop
 		   update-rc.d mysql defaults
-           cd /root		   
+           cd /root	
+		   rm -f ${MysqlVersion}.tar.gz		   
 	    fi		
 	fi
     /etc/init.d/mysql start
@@ -500,11 +497,14 @@ function installphp(){
 	then	
 		apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
 		/etc/init.d/php5-fpm stop
-		
-	    rm /etc/php5/fpm/php.ini
-		rm /etc/php5/fpm/php-fpm.conf
-		cp 	${lnmpdir}/conf/php.ini /etc/php5/fpm/php.ini
-		cp 	${lnmpdir}/conf/php-fpm.conf /etc/php5/fpm/php-fpm.conf		
+		sed -i  s/'listen = 127.0.0.1:9000'/'listen = \/var\/run\/php5-fpm.sock'/ /etc/php5/fpm/pool.d/www.conf
+		sed -i  s/'^pm.max_children = [0-9]*'/'pm.max_children = 2'/ /etc/php5/fpm/pool.d/www.conf
+		sed -i  s/'^pm.start_servers = [0-9]*'/'pm.start_servers = 2'/ /etc/php5/fpm/pool.d/www.conf
+		sed -i  s/'^pm.min_spare_servers = [0-9]*'/'pm.min_spare_servers = 2'/ /etc/php5/fpm/pool.d/www.conf
+		sed -i  s/'^pm.max_spare_servers = [0-9]*'/'pm.max_spare_servers = 3'/ /etc/php5/fpm/pool.d/www.conf
+		sed -i  s/'memory_limit = 128M'/'memory_limit = 64M'/ /etc/php5/fpm/php.ini
+		sed -i  s/'short_open_tag = Off'/'short_open_tag = On'/ /etc/php5/fpm/php.ini
+		sed -i  s/'upload_max_filesize = 2M'/'upload_max_filesize = 16M'/ /etc/php5/fpm/php.ini    	
 	else
 	    #install curl
 		Installcurl
@@ -518,6 +518,9 @@ function installphp(){
 		if [ ! -d /usr/local/php ]
 		then
 			mkdir /etc/php5
+			#download php
+			wget http://php.net/distributions/${PhpVersion}.tar.gz
+			tar -zxvf ${PhpVersion}.tar.gz -C ${lnmpdir}/packages
 			cd ${lnmpdir}/packages/${PhpVersion}
 			groupadd www-data
 			useradd -m -s /sbin/nologin -g www-data www-data
@@ -539,6 +542,7 @@ function installphp(){
 			#php auto-start		
 			update-rc.d php5-fpm defaults
 			cd /root
+			rm -f ${PhpVersion}.tar.gz
 		fi
 	fi
 	/etc/init.d/php5-fpm start	
