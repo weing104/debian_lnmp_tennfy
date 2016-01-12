@@ -502,6 +502,7 @@ function installphp(){
 		sed -i  s/'^pm.start_servers = [0-9]*'/'pm.start_servers = 2'/ /etc/php5/fpm/pool.d/www.conf
 		sed -i  s/'^pm.min_spare_servers = [0-9]*'/'pm.min_spare_servers = 2'/ /etc/php5/fpm/pool.d/www.conf
 		sed -i  s/'^pm.max_spare_servers = [0-9]*'/'pm.max_spare_servers = 3'/ /etc/php5/fpm/pool.d/www.conf
+		sed -i  s/'^pm.max_children = [0-9]*'/'pm.max_children = 3'/ /etc/php5/fpm/pool.d/www.conf
 		sed -i  s/'memory_limit = 128M'/'memory_limit = 64M'/ /etc/php5/fpm/php.ini
 		sed -i  s/'short_open_tag = Off'/'short_open_tag = On'/ /etc/php5/fpm/php.ini
 		sed -i  s/'upload_max_filesize = 2M'/'upload_max_filesize = 16M'/ /etc/php5/fpm/php.ini    	

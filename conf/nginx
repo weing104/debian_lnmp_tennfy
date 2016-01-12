@@ -17,20 +17,6 @@
 #		script will manage the initiation of the \
 #		server and it's process state.
 #
-# processname: nginx
-# config:      /usr/local/nginx/conf/nginx.conf
-# pidfile:     /var/run/nginx.pid
-# Provides:    nginx
-#
-# Author:  Jason Giedymin
-#          <jason.giedymin AT gmail.com>.
-#
-# Version: 2.0 02-NOV-2009 jason.giedymin AT gmail.com
-# Notes: nginx init.d dash script for Ubuntu <=9.10.
-# 
-# This script's project home is:
-# 	http://code.google.com/p/nginx-init-ubuntu/
-#
 #------------------------------------------------------------------------------
 #                               Functions
 #------------------------------------------------------------------------------
@@ -49,7 +35,7 @@ PIDSPATH=/var/run
  
 DESCRIPTION="Nginx Server..."
  
-RUNAS=www-data                             #user to run as
+RUNAS=root                             #user to run as
  
 SCRIPT_OK=0                             #ala error codes
 SCRIPT_ERROR=1                          #ala error codes
