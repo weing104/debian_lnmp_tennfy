@@ -495,7 +495,7 @@ function installphp(){
     echo "--------------------------------------------------------------"  
     if [ "$RamSum" -lt "$Ramthreshold" ]
 	then	
-		apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli 
+		apt-get -y install php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-mysql php5-cgi php5-cli 
 		/etc/init.d/php5-fpm stop
 		sed -i  s/'listen = 127.0.0.1:9000'/'listen = \/var\/run\/php5-fpm.sock'/ /etc/php5/fpm/pool.d/www.conf
 		sed -i  s/'^pm.max_children = [0-9]*'/'pm.max_children = 2'/ /etc/php5/fpm/pool.d/www.conf
@@ -580,10 +580,8 @@ function installnginx(){
 		chmod +x /etc/nginx/nginx.conf
 		chmod +x /etc/init.d/nginx
 	fi	
-	#add nginx system variables
-	sed -i 's/\/usr\/sbin/\/usr\/sbin:\/usr\/sbin\/nginx/g' /etc/profile
-	source /etc/profile	
 	#set nginx auto-start
+	ln -s /usr/sbin/nginx /usr/bin/nginx
 	update-rc.d nginx defaults
 	#add rewrite rule
 	cp 	${lnmpdir}/conf/wordpress.conf /etc/nginx/wordpress.conf
@@ -799,11 +797,15 @@ function uninstalllnmp(){
 	#uninstall php
 	if [ ! -d /usr/local/php ]
 	then 
-		apt-get --purge remove php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-memcache php5-mysql php5-cgi php5-cli
+		apt-get --purge remove php5-fpm php5-gd php5-common php5-curl php5-imagick php5-mcrypt php5-mysql php5-cgi php5-cli memcached php5-memcache php5-memcached
 	else
 		update-rc.d -f php5-fpm remove
         rm -rf /etc/php5 /usr/local/php /usr/local/libiconv /usr/local/curl /usr/local/mhash /usr/local/mcrypt /usr/local/libmcrypt /usr/local/libmcrypt
-		rm -f /etc/init.d/php5-fpm /usr/bin/php /usr/bin/phpize /usr/sbin/php5-fpm /var/run/php5-fpm.sock /var/run/php5-fpm.pid /var/log/php5-fpm.log 		
+		rm -f /etc/init.d/php5-fpm /usr/bin/php /usr/bin/phpize /usr/sbin/php5-fpm /var/run/php5-fpm.sock /var/run/php5-fpm.pid /var/log/php5-fpm.log 	
+		if [ -d /usr/local/memcached ]
+		then
+		    rm -rf /usr/local/memcached
+		fi
 	fi
 	#usinstall mysql
 	if [ ! -d /usr/local/mysql ]
