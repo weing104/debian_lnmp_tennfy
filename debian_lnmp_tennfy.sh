@@ -349,7 +349,7 @@ function memcached()
     echo "----------------------------------------------------------------" 
     if [ "$RamSum" -lt "$Ramthreshold" ]
 	then
-		apt-get install memcached php5-memcache php5-memcached
+		apt-get install -y memcached php5-memcache php5-memcached
 	else
 		#install memcached server
 		id -u memcached >/dev/null 2>&1
