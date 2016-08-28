@@ -1,2 +1,12 @@
 # debian_lnmp_tennfy
-lnmp one-click shell script, written by tennfy, http://www.tennfy.com
+lnmp(linux, nginx, mysql, php) one-click install script
+
+## Requirements
+* Debain7 32 & 64 bit
+
+## Use
+> [debian下lnmp一键安装脚本完善版](http://www.tennfy.com/2123.html)
+
+## Author
+* tennfy
+* http://www.tennfy.com
